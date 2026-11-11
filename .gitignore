@@ -1,0 +1,9 @@
+/.cache/
+/.lake/
+/docbuild/.lake/
+
+
+# LaTeX build products
+/paper/*.aux
+/paper/*.log
+/paper/*.out

@@ -1,0 +1,27 @@
+{
+  "challenge_module": "Challenge",
+  "solution_module": "Solution",
+  "theorem_names": [
+    "EquivEmbed.gunther_fixed_point_equivariant",
+    "EquivEmbed.nash_gunther_right_inverse",
+    "EquivEmbed.nash_gunther_right_inverse_equivariant",
+    "EquivEmbed.veronese_map_free",
+    "EquivEmbed.haar_averaged_inner_product",
+    "EquivEmbed.equivariant_gunther_perturbation",
+    "EquivEmbed.equivariant_isometric_embedding_conditional"
+  ],
+  "definition_names": [
+    "EquivEmbed.EmbeddingProblem",
+    "EquivEmbed.GuntherPackage",
+    "EquivEmbed.HasFreeEmbedding",
+    "EquivEmbed.RealizableDense",
+    "EquivEmbed.ConeCondition",
+    "EquivEmbed.HasGuntherPackages"
+  ],
+  "permitted_axioms": [
+    "propext",
+    "Quot.sound",
+    "Classical.choice"
+  ],
+  "enable_nanoda": true
+}

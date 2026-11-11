@@ -1,0 +1,725 @@
+\documentclass[11pt]{amsart}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage[margin=1.15in]{geometry}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+% ---------------------------------------------------------------------------
+% Edit this macro once the repository is public.
+\newcommand{\repourl}{\url{https://github.com/schlafly1/equivariant-embedding}}
+% ---------------------------------------------------------------------------
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem*{maintheorem}{Main Theorem}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Met}{\mathrm{Met}}
+\newcommand{\Sym}{\operatorname{Sym}}
+\newcommand{\Ric}{\operatorname{Ric}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\range}{\operatorname{range}}
+\newcommand{\inner}[2]{\langle #1, #2\rangle}
+\newcommand{\cM}{\mathcal{M}}
+\newcommand{\cB}{\mathcal{B}}
+\newcommand{\cS}{\mathcal{S}}
+\newcommand{\cT}{\mathcal{T}}
+\newcommand{\cK}{\mathcal{K}}
+\newcommand{\lean}[1]{\texttt{\detokenize{#1}}}
+
+\title{Equivariant isometric embeddings via G\"unther's method}
+\author{Roger Schlafly}
+\date{\today}
+
+\begin{document}
+
+\begin{abstract}
+Moore and Schlafly proved in 1980 that a compact Riemannian manifold on which a compact Lie group $G$
+acts by isometries has an isometric embedding into a Euclidean space that is equivariant with respect
+to an orthogonal representation of $G$. The original proof used the Nash--Moser implicit function
+theorem with smoothing operators. We give a proof that replaces Nash--Moser by G\"unther's method,
+which reduces the isometric embedding equation to a fixed point problem for a contraction on a
+Banach space of H\"older maps. All of G\"unther's operators commute with the group action, so the
+contraction preserves the closed subspace of equivariant maps, and the uniqueness of the small fixed
+point makes the correction equivariant without any averaging of nonlinear solutions. We also
+formalize the algebraic and functional-analytic core of the argument in Lean~4 with Mathlib:
+the equivariant G\"unther fixed point theorem, the equivariance and coordinate independence of the
+Nash--G\"unther pointwise right inverse, the freeness of the Veronese map, the Haar-averaged inner
+product used in the approximation step, and the assembly of the main theorem from explicitly
+stated analytic inputs. The formal proofs use only the standard axioms of Lean.
+\end{abstract}
+
+\subjclass[2020]{53C42 (primary); 57S15, 58J05, 35J60, 68V20 (secondary)}
+\keywords{Isometric embedding, Nash embedding theorem, G\"unther's method, equivariant embedding,
+compact Lie group, formalized mathematics, Lean}
+
+\maketitle
+
+\section{Introduction}
+
+The Nash embedding theorem~\cite{Nash56} says that every Riemannian manifold has an isometric
+embedding into a Euclidean space of sufficiently large dimension. In~\cite{MS80} J.~D.~Moore and
+the author proved an equivariant version, extending the case of homogeneous spaces treated by Moore~\cite{Moore76}.
+
+\begin{maintheorem}[Moore--Schlafly~\cite{MS80}]
+Let $(M,g)$ be a compact Riemannian manifold and let $G$ be a compact Lie group acting smoothly on
+$M$ by isometries. Then there are an orthogonal representation $\rho\colon G\to O(N)$ and a smooth
+embedding $X\colon M\to\R^N$ such that
+\[
+X^*\inner{\cdot}{\cdot}_{\R^N} = g
+\qquad\text{and}\qquad
+X(\sigma p) = \rho(\sigma)\,X(p)\quad\text{for all }\sigma\in G,\ p\in M .
+\]
+\end{maintheorem}
+
+The proof in~\cite{MS80} has two steps. Step~1 finds a ``perturbable'' (free) equivariant embedding
+$X_0$ and shows, using the Nash--Moser implicit function theorem in the form of
+Sergeraert~\cite{Sergeraert70}, that every invariant metric close to $F(X_0)$ is induced by an
+equivariant embedding. Smoothing operators are made equivariant by composing with the Haar
+projection. Step~2 shows that invariant metrics induced by equivariant maps are dense, using the
+spectral theory of the Laplacian and Haar averaging.
+
+In 1989 G\"unther~\cite{Gunther89,Gunther91} found a much simpler proof of the Nash embedding
+theorem. He rewrote the linearized problem so that the nonlinear equation becomes a fixed point
+problem
+\begin{equation}\label{eq:fixed-point-intro}
+v = \cM(h) + \cB(v,v)
+\end{equation}
+in which $\cB$ loses no derivatives. The ordinary contraction mapping principle on a H\"older space
+then replaces the Nash--Moser iteration. Expositions are given by Yang~\cite{Yang98} and
+Tao~\cite{Tao16}; both note that G\"unther's reduction to a torus is a convenience and that one can
+work directly on $M$ with a background metric.
+
+This paper does two things.
+
+\begin{enumerate}[label=(\arabic*)]
+\item \emph{A proof of the Main Theorem by G\"unther's method}
+(Sections~\ref{sec:setup}--\ref{sec:proof}). We work intrinsically on $M$, using the Levi-Civita
+connection of the $G$-invariant metric $g$ and the operator $(\Delta-1)^{-1}$. Every operator in
+G\"unther's construction is then natural under isometries, so the map
+$v\mapsto\cM(h)+\cB(v,v)$ commutes with the action of $G$ on maps $M\to\R^N$. Its unique small
+fixed point is therefore equivariant (Theorem~\ref{thm:abstract-gunther}). No smoothing operators
+are needed and no nonlinear solution is averaged. Step~2 is the same as in~\cite{MS80}.
+
+\item \emph{A machine-checked formalization} of the algebraic and functional-analytic core of
+this proof in Lean~4~\cite{Lean4} with Mathlib~\cite{Mathlib20} (Section~\ref{sec:lean}).
+Mathlib does not yet contain H\"older spaces of sections over manifolds, the Laplace--Beltrami
+operator, Schauder estimates or the Mostow--Palais theorem. We therefore prove the new
+equivariant ingredients unconditionally, and we prove the Main Theorem conditionally: the
+classical analytic inputs are explicit hypotheses, and none of them asserts the existence of an
+equivariant solution of the nonlinear problem.
+\end{enumerate}
+
+Equivariant versions of G\"unther's construction for cocompact discrete group actions on
+noncompact manifolds have been studied recently by Qiu~\cite{Qiu25}; see also
+Burago--Qiu~\cite{BuragoQiu25}. As in~\cite{MS80}, no bound on $N$ depending only on $\dim M$ is
+possible in the equivariant setting: \cite[\S6]{MS80} constructs left-invariant metrics on $S^3$
+that need arbitrarily large $N$.
+
+\subsection*{Conventions}
+All manifolds are smooth, compact and without boundary (see Remark~\ref{rem:boundary} for
+boundary), and $n=\dim M$. Repeated indices are summed and indices are raised with $g$. ``Smooth''
+means $C^\infty$. We fix $\alpha\in(0,1)$.
+
+\section{Setup}\label{sec:setup}
+
+\subsection{Equivariant maps and induced metrics}
+Let $(V,\rho)$ be a finite-dimensional orthogonal representation of $G$. A map $X\colon M\to V$
+is \emph{equivariant} if $X(\sigma p)=\rho(\sigma)X(p)$. Its \emph{induced metric} is the symmetric
+$2$-tensor
+\[
+F(X) = \inner{dX}{dX},\qquad F(X)_{ij} = \inner{\partial_i X}{\partial_j X}.
+\]
+If $X$ is equivariant then $F(X)$ is $G$-invariant, because $\rho(\sigma)$ is orthogonal. Two maps
+$X_1\colon M\to V_1$ and $X_2\colon M\to V_2$ give $(X_1,X_2)\colon M\to V_1\oplus V_2$ with
+\begin{equation}\label{eq:F-additive}
+F(X_1,X_2) = F(X_1)+F(X_2),\qquad F(tX) = t^2F(X).
+\end{equation}
+If $X_1$ is an embedding, so is $(X_1,X_2)$. A $G$-invariant symmetric $2$-tensor is
+\emph{realizable} if it equals $F(X)$ for some smooth equivariant map $X$ into some orthogonal
+representation. By~\eqref{eq:F-additive} the realizable tensors form a convex cone.
+
+\subsection{H\"older spaces and the group action}\label{subsec:holder}
+Let $\nabla$ be the Levi-Civita connection of $g$; it acts on $V$-valued tensor fields
+componentwise. For a $V$-valued tensor field $T$ we use the H\"older norm
+\[
+\|T\|_{k,\alpha} = \sum_{j=0}^{k}\sup_M|\nabla^jT| + [\nabla^kT]_\alpha,\qquad
+[S]_\alpha = \sup_{0<d(x,y)<\iota}\frac{|S(x)-\Pi_{y\to x}S(y)|}{d(x,y)^\alpha},
+\]
+where $d$ is the Riemannian distance, $\iota$ is the injectivity radius and $\Pi_{y\to x}$ is
+parallel transport along the unique minimizing geodesic. This norm is equivalent to the norm
+defined with charts and a partition of unity. Let $C^{k,\alpha}(M;V)$ and
+$C^{k,\alpha}(S^2T^*M)$ be the resulting Banach spaces.
+
+The group $G$ acts on $V$-valued maps and on tensors by
+\begin{equation}\label{eq:action}
+(\sigma\cdot v)(x) = \rho(\sigma)\,v(\sigma^{-1}x),\qquad \sigma\cdot h = (\sigma^{-1})^*h .
+\end{equation}
+The fixed points of the first action are exactly the equivariant maps, and those of the second are
+the invariant tensors.
+
+\begin{lemma}\label{lem:isometric-action}
+The actions~\eqref{eq:action} are linear and isometric for $\|\cdot\|_{k,\alpha}$.
+\end{lemma}
+
+\begin{proof}
+An isometry $\sigma$ of $(M,g)$ preserves $\nabla$, the distance, minimizing geodesics, the
+injectivity radius and parallel transport, so $\nabla^j(\sigma\cdot T)=\sigma\cdot\nabla^jT$ and
+every term of the norm is preserved. The factor $\rho(\sigma)$ is orthogonal, so it preserves
+pointwise norms.
+\end{proof}
+
+For an arbitrary equivalent norm, $\|v\|' = \sup_{\sigma\in G}\|\sigma\cdot v\|$ is an equivalent
+norm for which $G$ acts isometrically. So the choice of norm is not essential.
+
+\subsection{Elliptic facts}
+Let $\Delta=\tr_g\nabla^2$ be the rough Laplacian on scalar or $V$-valued tensor fields. It is
+nonpositive and self-adjoint, so $\Delta-1$ is invertible on each tensor bundle. We write $P_0$ and
+$P_1$ for $(\Delta-1)^{-1}$ on symmetric $2$-tensors and on $1$-forms. We use these standard facts.
+
+\begin{enumerate}[label=(E\arabic*)]
+\item\label{E:schauder} (Schauder estimates) $P_0$ and $P_1$ are bounded from $C^{k,\alpha}$ to
+$C^{k+2,\alpha}$ for every $k\ge0$; see e.g.~\cite[Ch.~6]{GT} for the local estimates and~\cite{Aubin} for compact manifolds.
+\item\label{E:natural} (Naturality) $\Delta$, $P_0$, $P_1$ and $\Ric$ commute with isometries.
+\item\label{E:products} (Products) Pointwise contractions define bounded bilinear maps
+$C^{k,\alpha}\times C^{k,\alpha}\to C^{k,\alpha}$, and multiplication by a smooth tensor is bounded
+on $C^{k,\alpha}$.
+\item\label{E:bochner} (Commutators) For a $V$-valued function $f$,
+$\Delta\nabla f = \nabla\Delta f + \Ric(\nabla f)$. For a $1$-form $w$, the commutator
+$\cK(w) = \Sym([\Delta,\nabla]w)$ is a first-order operator whose coefficients are built from the
+curvature tensor and its covariant derivative. In particular
+$\cK\colon C^{k+1,\alpha}\to C^{k,\alpha}$ is bounded and commutes with isometries.
+\end{enumerate}
+
+\section{Free maps and the pointwise right inverse}\label{sec:right-inverse}
+
+For a smooth map $u\colon M\to V$ and $x\in M$, define
+\[
+A_u(x)\colon T_xM\oplus S^2T_xM\to V,\qquad
+A_u(x)(\xi,s) = du_x(\xi) + \nabla^2u_x(s),
+\]
+where the Hessian $\nabla^2u_x\in S^2T^*_xM\otimes V$ is contracted with $s$.
+
+\begin{definition}
+The map $u$ is \emph{free} if $A_u(x)$ is injective for every $x\in M$.
+\end{definition}
+
+In coordinates, $\partial_i\partial_ju = \nabla^2_{ij}u+\Gamma^k_{ij}\partial_ku$. So $u$ is free
+if and only if the $n+\tfrac12n(n+1)$ vectors $\partial_iu$ and $\partial_i\partial_ju$
+$(i\le j)$ are linearly independent. This is Nash's condition, called \emph{perturbable}
+in~\cite{MS80}.
+
+Give $T_xM\oplus S^2T_xM$ the inner product induced by $g$ and let $A_u(x)^\dagger$ be the
+adjoint. After identifying vectors and covectors with $g$,
+\begin{equation}\label{eq:adjoint}
+A_u^\dagger y = \bigl(\inner{du}{y},\ \inner{\nabla^2u}{y}\bigr),\qquad
+\text{i.e. } (A_u^\dagger y)_i = \inner{\partial_iu}{y},\quad (A_u^\dagger y)_{ij} = \inner{\nabla^2_{ij}u}{y}.
+\end{equation}
+For free $u$ define
+\[
+L_u(x) = A_u(x)\bigl(A_u(x)^\dagger A_u(x)\bigr)^{-1}\colon T^*_xM\oplus S^2T^*_xM\to V .
+\]
+
+\begin{proposition}[Lean: \lean{nash_gunther_right_inverse}]\label{prop:right-inverse}
+Let $A\colon W\to V$ be an injective linear map of finite-dimensional real inner product spaces
+and $b\in W$. Then $x=A(A^\dagger A)^{-1}b$ is the unique solution of $A^\dagger x=b$ in
+$\range A$, and it has the least norm among all solutions of $A^\dagger x=b$.
+\end{proposition}
+
+\begin{proof}
+$A^\dagger A$ is injective because $\inner{A^\dagger Aw}{w}=|Aw|^2$, hence invertible. If $x=Aw$
+and $A^\dagger x=b$ then $w=(A^\dagger A)^{-1}b$. If $A^\dagger y=b$, then $y-x\in\ker
+A^\dagger=(\range A)^\perp$, so $|y|^2=|x|^2+|y-x|^2$.
+\end{proof}
+
+So $L_u(x)$ is a right inverse of $A_u(x)^\dagger$, depends smoothly on $x$, and does not depend
+on choices of coordinates. The next statement is the pointwise heart of equivariance in Step~1
+of~\cite{MS80}.
+
+\begin{proposition}[Lean: \lean{nash_gunther_right_inverse_equivariant}]\label{prop:right-inverse-eq}
+Let $A,A'\colon W\to V$ with $A$ injective, let $R$ be a linear isometry of $V$ and $P$ a linear
+automorphism of $W$, and suppose $A'=R\circ A\circ P$. If $x\in\range A$ solves $A^\dagger x=b$
+and $x'\in\range A'$ solves $A'^\dagger x'=P^\dagger b$, then $x'=Rx$.
+\end{proposition}
+
+\begin{proof}
+$Rx\in\range A'$ since $P$ is onto, and $A'^\dagger Rx = P^\dagger A^\dagger R^{-1}Rx=P^\dagger b$
+since $R^\dagger=R^{-1}$. Apply the uniqueness in Proposition~\ref{prop:right-inverse}.
+\end{proof}
+
+\begin{corollary}\label{cor:L-equivariant}
+Let $u$ be a free equivariant map and $b$ a $G$-invariant section of $T^*M\oplus S^2T^*M$ of class
+$C^{k,\alpha}$. Then $x\mapsto L_u(x)b(x)$ is an equivariant map of class $C^{k,\alpha}$.
+\end{corollary}
+
+\begin{proof}
+Differentiating $u\circ\sigma=\rho(\sigma)\circ u$ and using~\ref{E:natural} for $\nabla$ gives
+$A_u(\sigma x)\circ Q = \rho(\sigma)\circ A_u(x)$, where $Q=d\sigma_x\oplus S^2d\sigma_x$ is an
+isometry. Apply Proposition~\ref{prop:right-inverse-eq} with $A=A_u(x)$, $A'=A_u(\sigma x)$,
+$R=\rho(\sigma)$ and $P=Q^{-1}$. Then $P^\dagger=Q$ and $Qb(x)=b(\sigma x)$ by invariance, so
+$L_u(\sigma x)b(\sigma x)=\rho(\sigma)L_u(x)b(x)$. Regularity follows from~\ref{E:products}.
+\end{proof}
+
+\section{A free equivariant starting embedding}\label{sec:veronese}
+
+By the theorem of Mostow and Palais~\cite{Mostow57,Palais57} there is an equivariant embedding
+$e\colon M\to W$ into an orthogonal representation $W$. Give $S^2W\subset W\otimes W$ the induced
+inner product, so that $S^2\rho$ is orthogonal, and put
+\[
+u_0 = (e,\ e\odot e)\colon M\to W\oplus S^2W,\qquad e\odot e = e\otimes e .
+\]
+This is the construction of~\cite[\S2]{MS80}; in an orthonormal basis it is
+$(x^a,\ (x^a)^2,\ \sqrt2\,x^ax^b)_{a<b}$.
+
+\begin{proposition}[Lean: \lean{veronese_map_free}]\label{prop:veronese}
+$u_0$ is a free equivariant embedding.
+\end{proposition}
+
+\begin{proof}
+Equivariance and injectivity are clear. Fix a point, write $x=e(p)$, $x_i=\partial_ie(p)$ (linearly
+independent) and $x_{ij}=\partial_i\partial_je(p)$, and write $a\odot b=a\otimes b+b\otimes a$. By
+the product rule,
+\[
+\partial_iu_0 = \bigl(x_i,\ x_i\odot x\bigr),\qquad
+\partial_i\partial_ju_0 = \bigl(x_{ij},\ x_{ij}\odot x + x_i\odot x_j\bigr)
+\]
+(for $\partial_i\partial_j$ of $e\otimes e$ the last term is $x_i\otimes x_j+x_j\otimes x_i$).
+Suppose $\sum c_i\partial_iu_0+\sum d_{ij}\partial_i\partial_ju_0=0$ with $d$ symmetric. The first
+component gives $a:=\sum c_ix_i+\sum d_{ij}x_{ij}=0$. Evaluating the second component on
+$\varphi\otimes\psi$ for linear functionals $\varphi,\psi$ gives
+\[
+\varphi(a)\psi(x)+\varphi(x)\psi(a)+2\sum_{i,j}d_{ij}\varphi(x_i)\psi(x_j)=0 .
+\]
+Choosing $\varphi,\psi$ dual to $x_k,x_l$ gives $d_{kl}=0$, and then $\sum c_ix_i=0$ gives
+$c=0$.
+\end{proof}
+
+Since $tu_0$ is free for $t\ne0$, Proposition~\ref{prop:veronese} supplies free equivariant
+embeddings with induced metric $t^2F(u_0)$.
+
+\section{G\"unther's reformulation on a Riemannian manifold}\label{sec:gunther}
+
+Let $u$ be a smooth free equivariant embedding into $V$. We look for $v\in C^{2,\alpha}(M;V)$ with
+$F(u+v)=F(u)+h$, where $h$ is a given invariant symmetric $2$-tensor. Write
+$(\Sym\nabla w)_{ij}=\tfrac12(\nabla_iw_j+\nabla_jw_i)$ for a $1$-form $w$.
+
+\subsection{Two identities}
+For $V$-valued $u$ and $v$,
+\begin{equation}\label{eq:id1}
+\inner{\nabla_iu}{\nabla_jv}+\inner{\nabla_ju}{\nabla_iv}
+= 2\Sym\nabla\bigl(\inner{du}{v}\bigr)_{ij} - 2\inner{\nabla^2_{ij}u}{v},
+\end{equation}
+since $\nabla_i\inner{\nabla_ju}{v}=\inner{\nabla^2_{ij}u}{v}+\inner{\nabla_ju}{\nabla_iv}$ and the
+Hessian is symmetric.
+
+The quadratic term $a_{ij}=\inner{\nabla_iv}{\nabla_jv}$ is handled by G\"unther's trick. For
+$V$-valued $v,w\in C^{2,\alpha}$ define the $1$-form and $2$-tensor
+\begin{align*}
+\sigma(v,w)_j &= \tfrac12\bigl(\inner{\nabla_jv}{\Delta w}+\inner{\nabla_jw}{\Delta v}\bigr),\\
+\tilde\tau(v,w)_{ij} &= \Sym_{(ij),(vw)}\Bigl[-2\inner{\nabla^2_{ij}v}{\Delta w}
+  + 2\inner{\nabla_i\nabla_kv}{\nabla_j\nabla^kw}\\
+  &\qquad + 2\Ric_i^{\,k}\inner{\nabla_kv}{\nabla_jw} - \inner{\nabla_iv}{\nabla_jw}\Bigr],
+\end{align*}
+where $\Sym_{(ij),(vw)}$ symmetrizes in $i,j$ and in $v,w$. Both lie in $C^{0,\alpha}$
+by~\ref{E:products}. Put
+\begin{equation}\label{eq:S-T}
+\cS(v,w) = P_1\,\sigma(v,w),\qquad
+\cT(v,w) = P_0\bigl(\tilde\tau(v,w) - 2\,\cK(\cS(v,w))\bigr).
+\end{equation}
+By~\ref{E:schauder} and~\ref{E:bochner}, $\cS(v,w)\in C^{2,\alpha}(T^*M)$ and
+$\cT(v,w)\in C^{2,\alpha}(S^2T^*M)$.
+
+\begin{lemma}[G\"unther's identity]\label{lem:gunther-identity}
+For $v\in C^{2,\alpha}(M;V)$,
+\[
+\inner{\nabla_iv}{\nabla_jv} = 2\Sym\nabla\bigl(\cS(v,v)\bigr)_{ij} + \cT(v,v)_{ij}.
+\]
+\end{lemma}
+
+\begin{proof}
+First let $v$ be smooth. By the Leibniz rule and~\ref{E:bochner}, applied to the $V$-valued
+$1$-form $\nabla v$,
+\[
+\Delta a_{ij} = \inner{\nabla_i\Delta v}{\nabla_jv}+\inner{\nabla_iv}{\nabla_j\Delta v}
++\Ric_i^{\,k}\inner{\nabla_kv}{\nabla_jv}+\Ric_j^{\,k}\inner{\nabla_kv}{\nabla_iv}
++2\inner{\nabla_i\nabla_kv}{\nabla_j\nabla^kv}.
+\]
+Using $\inner{\nabla_i\Delta v}{\nabla_jv}=\nabla_i\inner{\nabla_jv}{\Delta v}
+-\inner{\nabla^2_{ij}v}{\Delta v}$, this gives
+$(\Delta-1)a = 2\Sym\nabla\sigma(v,v)+\tilde\tau(v,v)$. Let $S=\cS(v,v)=P_1\sigma(v,v)$. By the
+definition of $\cK$, $(\Delta-1)\Sym\nabla S=\Sym\nabla\bigl((\Delta-1)S\bigr)+\cK(S)
+=\Sym\nabla\sigma(v,v)+\cK(S)$. Hence
+\[
+(\Delta-1)\bigl(a-2\Sym\nabla S\bigr) = \tilde\tau(v,v)-2\cK(S),
+\]
+and applying $P_0$ gives the claim. For general $v\in C^{2,\alpha}$, choose $\beta\in(0,\alpha)$.
+Smooth maps are dense in $C^{2,\alpha}$ for the $C^{2,\beta}$ norm, and both sides of the identity
+are continuous from $C^{2,\beta}$ to $C^{0,\beta}$.
+\end{proof}
+
+\subsection{The fixed point equation}
+Combining~\eqref{eq:id1} and Lemma~\ref{lem:gunther-identity},
+\[
+F(u+v)-F(u) = 2\Sym\nabla\bigl(\inner{du}{v}+\cS(v,v)\bigr)
+-2\Bigl(\inner{\nabla^2u}{v}-\tfrac12\cT(v,v)\Bigr).
+\]
+So $F(u+v)=F(u)+h$ holds as soon as
+\begin{equation}\label{eq:system}
+\inner{du}{v} = -\cS(v,v),\qquad
+\inner{\nabla^2u}{v} = \tfrac12\cT(v,v)-\tfrac12h .
+\end{equation}
+By~\eqref{eq:adjoint} this system is $A_u^\dagger v=\bigl(-\cS(v,v),\ \tfrac12\cT(v,v)-\tfrac12h\bigr)$.
+Define
+\[
+\cM(h) = L_u\bigl(0,-\tfrac12h\bigr),\qquad
+\cB(v,w) = L_u\bigl(-\cS(v,w),\ \tfrac12\cT(v,w)\bigr),
+\]
+where $L_u$ acts pointwise.
+
+\begin{proposition}\label{prop:gunther-package}
+Let $E=C^{2,\alpha}(M;V)$ and $\Met^{2,\alpha}=C^{2,\alpha}(S^2T^*M)$.
+\begin{enumerate}[label=(\alph*)]
+\item\label{pkg:bounded} $\cM\colon\Met^{2,\alpha}\to E$ is bounded linear and
+$\cB\colon E\times E\to E$ is bounded bilinear.
+\item\label{pkg:identity} If $v\in E$ satisfies $v=\cM(h)+\cB(v,v)$, then $F(u+v)=F(u)+h$.
+\item\label{pkg:equivariant} If $h$ is $G$-invariant then $\cM(h)$ is $G$-fixed, and
+$\cB(\sigma\cdot v,\sigma\cdot w)=\sigma\cdot\cB(v,w)$ for all $\sigma\in G$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\ref{pkg:bounded} follows from~\ref{E:schauder}--\ref{E:bochner}, because $L_u$ has smooth
+coefficients. For~\ref{pkg:identity}, $A_u^\dagger L_u=\mathrm{id}$ gives
+$A_u^\dagger v = (0,-\tfrac12h)+(-\cS(v,v),\tfrac12\cT(v,v))$, which is~\eqref{eq:system}. For
+\ref{pkg:equivariant}, the operators $\nabla$, $\Delta$, $\Ric$, $P_0$, $P_1$ and $\cK$ and the
+contractions with $g$ are natural under isometries~\ref{E:natural}, and the inner product of $V$
+is $\rho$-invariant. So $\cS(\sigma\cdot v,\sigma\cdot w)=\sigma\cdot\cS(v,w)$, and likewise for
+$\cT$. Corollary~\ref{cor:L-equivariant} (in its pointwise form) gives the equivariance of $L_u$.
+\end{proof}
+
+We also need two standard facts.
+
+\begin{enumerate}[label=(F\arabic*)]
+\item\label{F:regularity} (Regularity, G\"unther~\cite{Gunther89,Gunther91}) There is $r>0$ such
+that if $h$ is smooth, $v\in E$, $\|v\|_{2,\alpha}<r$ and $v=\cM(h)+\cB(v,v)$, then $v$ is smooth.
+The reason is that, after differentiating the equation $k$ times, the top-order derivatives of $v$
+satisfy a \emph{linear} equation $w=f+\mathcal{L}_vw$, where $\|\mathcal{L}_v\|\le
+C\|v\|_{2,\alpha}$ and $C$ does not depend on $k$.
+\item\label{F:open} (Openness of embeddings) There is $\delta>0$ such that if $\|v\|_{2,\alpha}<\delta$
+then $u+v$ is an embedding; see~\cite[Ch.~2]{Hirsch}.
+\end{enumerate}
+
+\section{The equivariant G\"unther perturbation theorem}\label{sec:perturbation}
+
+\begin{theorem}[Lean: \lean{gunther_fixed_point_equivariant}]\label{thm:abstract-gunther}
+Let $E$ be a real Banach space on which a monoid $G$ acts by linear isometries. Let
+$\cB\colon E\times E\to E$ be bounded bilinear and $G$-equivariant, and let $m\in E$ be
+$G$-fixed with $4\|\cB\|\,\|m\|<1$. Then $v=m+\cB(v,v)$ has a unique solution with
+$\|v\|\le2\|m\|$, and this solution is $G$-fixed.
+\end{theorem}
+
+\begin{proof}
+Let $T(v)=m+\cB(v,v)$ and $\bar B=\{\|v\|\le2\|m\|\}$. For $v,w\in\bar B$ we have
+$\|T(v)\|\le\|m\|+4\|\cB\|\|m\|^2\le2\|m\|$, and
+$\|T(v)-T(w)\| = \|\cB(v,v-w)+\cB(v-w,w)\|\le4\|\cB\|\|m\|\,\|v-w\|$. So $T$ is a contraction of
+the complete set $\bar B$ and has a unique fixed point $v$ there. For $\sigma\in G$, the point
+$\sigma\cdot v$ lies in $\bar B$ (the action is isometric) and
+$T(\sigma\cdot v)=\sigma\cdot m+\sigma\cdot\cB(v,v)=\sigma\cdot T(v)=\sigma\cdot v$. By
+uniqueness, $\sigma\cdot v=v$.
+\end{proof}
+
+Lean proves this for a general quadratic map $Q$ with $Q(0)=0$ and
+$\|Q(v)-Q(w)\|\le C(\|v\|+\|w\|)\|v-w\|$, and deduces the bilinear case.
+
+\begin{theorem}[Equivariant perturbation; Lean: \lean{equivariant_gunther_perturbation}]\label{thm:perturbation}
+Let $u$ be a smooth free equivariant embedding. There is $\varepsilon>0$ such that for every
+smooth $G$-invariant symmetric $2$-tensor $h$ with $\|h\|_{2,\alpha}<\varepsilon$ there is a smooth
+equivariant embedding $X$ (for the same representation) with $F(X)=F(u)+h$.
+\end{theorem}
+
+\begin{proof}
+Use the equivariant Banach space $E=C^{2,\alpha}(M;V)$ (Lemma~\ref{lem:isometric-action}) and the
+operators of Proposition~\ref{prop:gunther-package}. Let $r,\delta$ be as in~\ref{F:regularity}
+and~\ref{F:open}, let
+\[
+\eta=\min\Bigl(\tfrac12\min(\delta,r),\ \frac1{4\|\cB\|+1}\Bigr),\qquad \varepsilon=\frac{\eta}{\|\cM\|+1}.
+\]
+If $\|h\|_{2,\alpha}<\varepsilon$ then $m=\cM(h)$ is $G$-fixed with $\|m\|<\eta$, so
+$4\|\cB\|\|m\|<1$. Theorem~\ref{thm:abstract-gunther} gives a $G$-fixed $v$ with
+$v=m+\cB(v,v)$ and $\|v\|\le2\|m\|<\min(\delta,r)$. By~\ref{F:regularity}, $v$ is smooth; it is
+equivariant since it is $G$-fixed; $X=u+v$ is an embedding by~\ref{F:open}; and $F(X)=F(u)+h$ by
+Proposition~\ref{prop:gunther-package}\ref{pkg:identity}.
+\end{proof}
+
+\begin{remark}
+Theorem~\ref{thm:perturbation} needs no averaging of solutions. Averaging is in fact useless
+here: the average of two solutions of $F(X)=g$ is not a solution. Equivariance comes entirely from
+the uniqueness of the small fixed point. Equivalently, the contraction preserves the closed
+subspace $E^G$ of equivariant maps, and one may run the iteration inside $E^G$.
+\end{remark}
+
+\section{Approximation by realizable metrics}\label{sec:approx}
+
+This step is that of~\cite[\S3]{MS80}; we include it for completeness and to point out the part
+that is formalized.
+
+\begin{proposition}\label{prop:approx}
+Every smooth positive definite $G$-invariant metric $g'$ on $M$ is a limit, in every
+$C^{k,\alpha}$ norm, of realizable metrics.
+\end{proposition}
+
+\begin{proof}
+By the (non-equivariant) Nash embedding theorem, for instance in G\"unther's form, there are
+smooth functions $y^1,\dots,y^q$ with $g'=\sum_i dy^i\otimes dy^i$. (The weaker statement that
+$g'$ can be approximated by such sums, proved directly in~\cite[p.~58]{Nash56}, is enough.) Let
+$\Delta_g$ be the Laplace--Beltrami operator of $g$. The partial sums of the eigenfunction
+expansion of a smooth function converge in every Sobolev norm, hence in every $C^{k}$ norm. So
+there are finite sums $f_i$ of eigenfunctions with
+\[
+\Bigl\|g'-\sum_i df_i\otimes df_i\Bigr\|_{k,\alpha}<\varepsilon .
+\]
+Each eigenspace of $\Delta_g$ is finite-dimensional and $G$-invariant ($G$ acts by isometries). So
+the span $V_i$ of the translates $\sigma\cdot f_i$ is a finite-dimensional $G$-invariant space of
+functions. Let $X_i\colon M\to V_i^*$ be the evaluation map $X_i(p)(f)=f(p)$; it is smooth and
+equivariant for the dual representation. Let $\varphi_i\in V_i^{**}$ be evaluation at $f_i$, and
+give $V_i^*$ the inner product
+\begin{equation}\label{eq:averaged-ip}
+\inner{\xi}{\eta}_i = \int_G\xi(\sigma\cdot f_i)\,\eta(\sigma\cdot f_i)\,d\sigma
+= \int_G \varphi_i(\sigma^{-1}\xi)\,\varphi_i(\sigma^{-1}\eta)\,d\sigma,
+\end{equation}
+with $d\sigma$ normalized Haar measure. By Proposition~\ref{prop:avg-ip} below, this is a
+$G$-invariant inner product, since the translates of $f_i$ span $V_i$. For tangent vectors $a,b$
+at $p$,
+\[
+F(X_i)(a,b) = \int_G d(\sigma\cdot f_i)(a)\,d(\sigma\cdot f_i)(b)\,d\sigma
+= \Pi\bigl(df_i\otimes df_i\bigr)(a,b),\qquad \Pi(\kappa)=\int_G\sigma^*\kappa\,d\sigma,
+\]
+where the Haar projection $\Pi$ is computed pointwise. Since $\Pi$ commutes with $\nabla$ and with
+parallel transport, Lemma~\ref{lem:isometric-action} gives $\|\Pi\kappa\|_{k,\alpha}\le\|\kappa\|_{k,\alpha}$ (estimate each term of the norm inside the integral).
+Also $\Pi g'=g'$. So $X=(X_1,\dots,X_q)$ is a smooth equivariant map with
+\[
+\|g'-F(X)\|_{k,\alpha}=\Bigl\|\Pi\Bigl(g'-\sum_idf_i\otimes df_i\Bigr)\Bigr\|_{k,\alpha}<\varepsilon .
+\qedhere
+\]
+\end{proof}
+
+\begin{proposition}[Lean: \lean{haar_averaged_inner_product}]\label{prop:avg-ip}
+Let a compact group $G$ act linearly and continuously on a finite-dimensional real vector space
+$W$. Let $\mu$ be a finite left-invariant measure on $G$ that is positive on nonempty open sets,
+and let $\varphi\in W^*$ be such that the functionals $\varphi\circ\rho(\sigma)$ separate the
+points of $W$. Then
+$q(x,y)=\int_G\varphi(\rho(\sigma)^{-1}x)\,\varphi(\rho(\sigma)^{-1}y)\,d\mu(\sigma)$ is a
+$G$-invariant inner product on $W$.
+\end{proposition}
+
+\begin{proof}
+Bilinearity and symmetry are clear, and invariance follows from left-invariance of $\mu$. If
+$x\ne0$, the continuous function $\sigma\mapsto\varphi(\rho(\sigma)^{-1}x)^2$ is nonnegative and
+not identically zero, so its integral is positive.
+\end{proof}
+
+\begin{remark}
+The construction can be made explicit. Decompose $L^2(M)$ (complex-valued) into irreducible
+unitary representations of $G$ inside the eigenspaces, expand the approximating functions $z^i$ in
+bases of these, and regroup the coefficients by isomorphism type. This gives an equivariant map $X$
+with $\sum_{a,r}N_r^{1/2}X_{iaar}=z^i$ and $F(X)=\Pi\bigl(\sum_i dz^i\otimes dz^i\bigr)$;
+see~\cite{Schlafly-notes}.
+\end{remark}
+
+\section{Proof of the Main Theorem}\label{sec:proof}
+
+Let $g$ be the given invariant metric. Proposition~\ref{prop:veronese} gives a free equivariant
+embedding $u_0$. Since $M$ is compact there is $c>0$ with $g-cF(u_0)$ positive definite. The map
+$u_1=\sqrt c\,u_0$ is a free equivariant embedding with $F(u_1)=cF(u_0)$. Let $\varepsilon$ be
+given by Theorem~\ref{thm:perturbation} for $u_1$. By Proposition~\ref{prop:approx} there is a
+smooth equivariant map $X_2$ with
+\[
+\|h\|_{2,\alpha}<\varepsilon,\qquad h := g-cF(u_0)-F(X_2).
+\]
+The tensor $h$ is smooth and $G$-invariant. Theorem~\ref{thm:perturbation} gives a smooth
+equivariant embedding $X_1$ with $F(X_1)=F(u_1)+h=g-F(X_2)$. Then $X=(X_1,X_2)$ is an equivariant
+embedding into the orthogonal representation $V_1\oplus V_2$, and $F(X)=F(X_1)+F(X_2)=g$
+by~\eqref{eq:F-additive}. \qed
+
+This argument is formalized in Lean as \lean{equivariant_isometric_embedding_conditional}, with the
+inputs listed in Table~\ref{tab:hypotheses} as hypotheses.
+
+\begin{remark}\label{rem:boundary}
+As in~\cite{MS80}, the case of manifolds with boundary reduces to the closed case: embed $M$
+equivariantly in a sphere in an orthogonal representation and extend the invariant metric to an
+invariant metric on the sphere by an invariant partition of unity. We do not treat the real-analytic
+category, where~\cite[\S4]{MS80} uses the method of Greene and Jacobowitz.
+\end{remark}
+
+\section{The Lean formalization}\label{sec:lean}
+
+The formalization is available at\\ \repourl.\\ It uses Lean~4 (toolchain \texttt{v4.35.0}) and
+Mathlib (tag \texttt{v4.35.0}), and follows the layout of the Palomar registry: a short file
+\texttt{Challenge.lean} with the advertised statements (proofs replaced by \texttt{sorry}), a file
+\texttt{Solution.lean} with the same statements proved, and the proof development in the directory
+\texttt{EquivEmbed/}. Every theorem in \texttt{Solution.lean} depends only on the axioms
+\texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}; \texttt{Lean.ofReduceBool}
+(\texttt{native\_decide}) is not used.
+
+\subsection{Unconditional statements}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Lean declaration & Mathematical content & Here\\
+\midrule
+\lean{gunther_fixed_point_equivariant} & equivariant G\"unther fixed point & Thm.~\ref{thm:abstract-gunther}\\
+\lean{nash_gunther_right_inverse} & pointwise right inverse, least norm & Prop.~\ref{prop:right-inverse}\\
+\lean{nash_gunther_right_inverse_equivariant} & equivariance, coordinates & Prop.~\ref{prop:right-inverse-eq}\\
+\lean{veronese_map_free} & freeness of $(e,e\odot e)$ & Prop.~\ref{prop:veronese}\\
+\lean{haar_averaged_inner_product} & averaged invariant inner product & Prop.~\ref{prop:avg-ip}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These are stated with ordinary Mathlib notions: Banach spaces with an isometric action
+(\texttt{IsIsometricSMul}), adjoints of linear maps between finite-dimensional inner product spaces,
+linear functionals, Bochner integrals with respect to a left-invariant measure, and
+\texttt{Representation}.
+
+\subsection{The conditional main theorem}
+An abstract structure \lean{EmbeddingProblem} records a normed space \texttt{Met} (invariant
+$C^{2,\alpha}$ tensors), a subset \texttt{pos} (positive definite tensors), a type \texttt{Map}
+(smooth equivariant maps into orthogonal representations), the induced metric
+$F\colon\texttt{Map}\to\texttt{Met}$, predicates for being an embedding and being free, and the
+direct sum and scaling operations with the identities~\eqref{eq:F-additive}. The theorem
+\lean{equivariant_isometric_embedding_conditional} states that every element of \texttt{pos} equals
+$F(X)$ for an embedding $X$, under the four hypotheses in Table~\ref{tab:hypotheses}.
+
+\begin{table}[ht]
+\caption{Hypotheses of the conditional main theorem.}\label{tab:hypotheses}
+\begin{tabular}{@{}p{0.27\textwidth}p{0.42\textwidth}p{0.22\textwidth}@{}}
+\toprule
+Lean hypothesis & Content & Justification\\
+\midrule
+\lean{HasFreeEmbedding} & a free equivariant embedding exists & Mostow--Palais and Prop.~\ref{prop:veronese}\\
+\lean{RealizableDense} & realizable metrics are dense in \texttt{pos} & Prop.~\ref{prop:approx}\\
+\lean{ConeCondition} & $g-cF(X)\in\texttt{pos}$ for some $c>0$ & compactness of $M$\\
+\lean{HasGuntherPackages} & at each free embedding: $E$, $\cM$, $\cB$ as in Prop.~\ref{prop:gunther-package}, \ref{F:regularity}, \ref{F:open} & Sections~\ref{sec:right-inverse}--\ref{sec:gunther}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The structure \lean{GuntherPackage} asks for a Banach space $E$ with an isometric linear $G$-action,
+a bounded linear $\cM$ with $G$-fixed values, a bounded bilinear equivariant $\cB$, a map sending
+smooth $G$-fixed $v$ to a map ``$u+v$'', G\"unther's identity
+(Proposition~\ref{prop:gunther-package}\ref{pkg:identity}), regularity of small solutions, and
+openness of embeddings. These are non-equivariant analytic facts together with the naturality of
+the operators; the existence of an equivariant solution is not assumed. It is produced in Lean by
+Theorem~\ref{thm:abstract-gunther}, through \lean{equivariant_gunther_perturbation}.
+
+\subsection{What is not formalized}
+The objects of differential geometry (manifolds, H\"older spaces of sections, the Laplacian,
+Schauder estimates, eigenfunction expansions, the Mostow--Palais theorem, the openness of
+embeddings) are not formalized; they enter only through the hypotheses above. The link between the
+abstract structure and an actual compact Riemannian $G$-manifold is therefore given by the paper,
+not by Lean. Formalizing it would need substantial new Mathlib infrastructure, in particular
+elliptic regularity on compact manifolds.
+
+\subsection{Checking}
+The project builds with \texttt{lake build}. The script \texttt{scripts/gen\_challenge.py}
+generates \texttt{Challenge.lean} and \texttt{Solution.lean} from a single list of statements, and
+copies the definitions of \texttt{EquivEmbed/Defs.lean} verbatim into \texttt{Challenge.lean}. We
+checked that the fully elaborated types of all compared declarations agree in the two environments,
+and that \texttt{\#print axioms} reports only the three standard axioms. The continuous integration
+configuration runs Lean's \texttt{lake comparator} with the independent kernels shipped with the
+toolchain.
+
+\section*{Acknowledgements}
+The 1980 theorem is joint work with John Douglas Moore. The Lean formalization and the drafting of
+this note were done with the assistance of Claude (Anthropic), an AI system; the author takes
+responsibility for the mathematical content and the statements of all results.
+
+\begin{thebibliography}{99}
+
+\bibitem{Aubin}
+T.~Aubin, \emph{Some Nonlinear Problems in Riemannian Geometry}, Springer Monographs in
+Mathematics, Springer, Berlin, 1998.
+
+\bibitem{BuragoQiu25}
+D.~Burago and H.~Qiu, \emph{On the geometry of Riemannian isometric embeddings}, preprint (2025),
+arXiv:2507.23164.
+
+\bibitem{GT}
+D.~Gilbarg and N.~S.~Trudinger, \emph{Elliptic Partial Differential Equations of Second Order},
+Classics in Mathematics, Springer, Berlin, 2001.
+
+\bibitem{Gunther89}
+M.~G\"unther, \emph{Zum Einbettungssatz von J.~Nash}, Math. Nachr. \textbf{144} (1989), 165--187.
+
+\bibitem{Gunther91}
+M.~G\"unther, \emph{Isometric embeddings of Riemannian manifolds}, Proceedings of the International
+Congress of Mathematicians (Kyoto, 1990), Vol.~II, Math. Soc. Japan, Tokyo, 1991, 1137--1143.
+
+\bibitem{Hirsch}
+M.~W.~Hirsch, \emph{Differential Topology}, Graduate Texts in Mathematics \textbf{33}, Springer,
+New York, 1976.
+
+\bibitem{Lean4}
+L.~de~Moura and S.~Ullrich, \emph{The Lean 4 theorem prover and programming language}, in:
+Automated Deduction -- CADE 28, Lecture Notes in Computer Science \textbf{12699}, Springer, 2021,
+625--635.
+
+\bibitem{Mathlib20}
+The mathlib Community, \emph{The Lean mathematical library}, in: Proceedings of the 9th ACM SIGPLAN
+International Conference on Certified Programs and Proofs (CPP 2020), ACM, 2020, 367--381.
+
+\bibitem{Moore76}
+J.~D.~Moore, \emph{Equivariant embeddings of Riemannian homogeneous spaces}, Indiana Univ. Math. J.
+\textbf{25} (1976), 271--279.
+
+\bibitem{MS80}
+J.~D.~Moore and R.~Schlafly, \emph{On equivariant isometric embeddings}, Math. Z. \textbf{173}
+(1980), 119--133.
+
+\bibitem{Mostow57}
+G.~D.~Mostow, \emph{Equivariant embeddings in Euclidean space}, Ann. of Math. \textbf{65} (1957),
+432--446.
+
+\bibitem{Nash56}
+J.~Nash, \emph{The imbedding problem for Riemannian manifolds}, Ann. of Math. \textbf{63} (1956),
+20--63.
+
+\bibitem{Palais57}
+R.~S.~Palais, \emph{Imbedding of compact, differentiable transformation groups in orthogonal
+representations}, J. Math. Mech. \textbf{6} (1957), 673--678.
+
+\bibitem{Qiu25}
+H.~Qiu, \emph{On equivariant isometric embeddings of Riemannian manifolds with symmetries},
+preprint (2025), arXiv:2511.09931.
+
+\bibitem{Schlafly-notes}
+R.~Schlafly, \emph{Notes on constructing approximate embeddings} and \emph{Equivariant G\"unther
+method}, notes accompanying~\cite{MS80}, \url{https://github.com/schlafly1/papers}.
+
+\bibitem{Sergeraert70}
+F.~Sergeraert, \emph{Une g\'en\'eralisation du th\'eor\`eme des fonctions implicites de Nash},
+C. R. Acad. Sci. Paris S\'er. A (1970), 861--863.
+
+\bibitem{Tao16}
+T.~Tao, \emph{Notes on the Nash embedding theorem}, blog post, May 11, 2016,
+\url{https://terrytao.wordpress.com/2016/05/11/notes-on-the-nash-embedding-theorem/}.
+
+\bibitem{Yang98}
+D.~Yang, \emph{Gunther's proof of Nash's isometric embedding theorem}, preprint (1998),
+arXiv:math/9807169.
+
+\end{thebibliography}
+
+\end{document}

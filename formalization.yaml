@@ -1,0 +1,162 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+# formalization.yaml v0.4
+version: "v0.4"
+
+project:
+  name: "Equivariant isometric embeddings via Günther's method"
+  description: >-
+    A Lean 4 / Mathlib formalization of the algebraic and functional-analytic core of a proof,
+    by Günther's method, of the Moore–Schlafly theorem (Math. Z. 173, 1980): a compact
+    Riemannian manifold with an isometric action of a compact Lie group has an isometric
+    embedding into Euclidean space that is equivariant for an orthogonal representation. It
+    proves unconditionally the equivariant Günther fixed point theorem, the uniqueness, least-norm
+    property, equivariance and coordinate independence of the pointwise Nash–Günther right
+    inverse, the freeness of the Veronese map, and the Haar-averaged invariant inner product
+    used in the approximation step. It proves the main theorem conditionally, from explicitly
+    stated analytic hypotheses on an abstract embedding problem.
+  authors:
+    - "Roger Schlafly"
+  license: "Apache-2.0"
+  responsible_maintainers:
+    - "Roger Schlafly"
+
+classification:
+  arxiv: ["math.DG", "cs.LO"]
+  msc2020: ["53C42", "57S15", "58J05", "68V20"]
+
+sources:
+  - title: "On Equivariant Isometric Embeddings"
+    authors:
+      - "John Douglas Moore"
+      - "Roger Schlafly"
+    type: "article"
+    location: "Math. Z. 173 (1980), 119–133"
+    relationship: "adapts"
+    note: >-
+      The main theorem of this article is the target. Its Step 1 (Nash–Moser) is replaced by
+      Günther's method; the Veronese construction and Step 2 (approximation by realizable
+      metrics) follow the article.
+    license: "unknown"
+    author_endorsement: "participated"
+  - title: "Zum Einbettungssatz von J. Nash"
+    authors:
+      - "Matthias Günther"
+    type: "article"
+    location: "Math. Nachr. 144 (1989), 165–187"
+    relationship: "background"
+    license: "unknown"
+    author_endorsement: "not-contacted"
+  - title: "Equivariant isometric embeddings via Günther's method"
+    authors:
+      - "Roger Schlafly"
+    type: "paper"
+    location: "paper/equivariant-gunther.pdf in this repository"
+    relationship: "formalizes"
+    note: "The accompanying paper; Section 9 describes this formalization."
+    license: "unknown"
+    author_endorsement: "participated"
+
+related_formalizations: []
+
+status:
+  scope: >-
+    Formalized unconditionally: the equivariant Günther fixed point theorem in a Banach space
+    with an isometric linear action (existence, uniqueness in the ball of radius 2‖m‖, and
+    G-invariance of the solution); the pointwise Nash–Günther right inverse A (A† A)⁻¹
+    (unique solution in range A, least norm, equivariance under orthogonal maps, invariance
+    under changes of coordinates); pointwise freeness of the Veronese map (X, X ⊙ X); and the
+    Haar-averaged form ∫ φ(σ⁻¹x) φ(σ⁻¹y) dμ (symmetric, bilinear, invariant, positive
+    definite). Formalized conditionally: the main theorem and the equivariant perturbation
+    theorem for an abstract EmbeddingProblem, assuming (1) a free equivariant embedding exists,
+    (2) realizable metrics are dense, (3) the cone condition, and (4) Günther's
+    non-equivariant analytic package (Banach space, bounded linear M with G-fixed values,
+    bounded bilinear equivariant B, Günther's identity, regularity, openness of embeddings).
+    Not formalized: manifolds, Hölder spaces of sections, the Laplace–Beltrami operator,
+    Schauder estimates, eigenfunction expansions, the Mostow–Palais theorem and openness of
+    embeddings; the link between the abstract EmbeddingProblem and an actual compact
+    Riemannian G-manifold is given in the paper only.
+  sorry_count: 0
+  sorry_in_definitions: 0
+  axioms: []
+
+automation:
+  methods:
+    - method: "agent"
+      models: ["Claude Opus 5.5"]
+      framework: "Claude Code"
+      tool_setup: >-
+        An AI agent wrote the Lean files and compiled them against Mathlib with lake, read the
+        compiler errors and revised the proofs; it generated Challenge.lean and Solution.lean
+        from one statement list (scripts/gen_challenge.py) and diffed the fully elaborated
+        statements of both.
+      cost:
+        wall_time: "about one hour"
+        spend_usd: "subscription-based"
+        hardware: "local machine"
+      prompting_notes: >-
+        The author supplied the 1980 paper and two short notes (an approximate-embedding
+        construction and a sketch of the equivariant Günther method) and asked for Lean,
+        LaTeX and PDF files suitable for submission.
+  spend_usd: "subscription-based"
+  notes: >-
+    The proofs were written by the AI agent under the author's direction. The author is
+    responsible for reviewing the statements before registration.
+
+fidelity:
+  divergences: >-
+    The main theorem is proved only in a conditional, abstract form: the geometric objects are
+    modeled by an abstract structure (EmbeddingProblem) and the classical analytic inputs are
+    hypotheses. The Veronese freeness statement is pointwise linear algebra in coordinates, with
+    the Sym² component tested against all products of linear functionals. The averaged inner
+    product is stated for any finite left-invariant measure that is positive on open sets, not
+    specifically for Haar measure.
+
+review:
+  status: "self-assessed; not yet reviewed by a human"
+  reviewers:
+    - "none"
+  notes: >-
+    Lean checks the statements in Challenge.lean against Solution.lean. A human audit of
+    Challenge.lean is still needed, in particular of the structures EmbeddingProblem and
+    GuntherPackage.
+
+alignment:
+  namespace: "EquivEmbed"
+  statements:
+    - source: "Paper, Theorem 6.1 (equivariant Günther fixed point)"
+      lean: "EquivEmbed.gunther_fixed_point_equivariant"
+      module: "Solution"
+      status: "proved"
+      note: "Unconditional."
+    - source: "Paper, Proposition 3.2 (Nash–Günther right inverse)"
+      lean: "EquivEmbed.nash_gunther_right_inverse"
+      module: "Solution"
+      status: "proved"
+      note: "Unconditional."
+    - source: "Paper, Proposition 3.3; Moore–Schlafly 1980, Section 2 (equivariance of the correction)"
+      lean: "EquivEmbed.nash_gunther_right_inverse_equivariant"
+      module: "Solution"
+      status: "proved"
+      note: "Unconditional; pointwise linear algebra."
+    - source: "Paper, Proposition 4.1; Moore–Schlafly 1980, Section 2 (perturbable embedding)"
+      lean: "EquivEmbed.veronese_map_free"
+      module: "Solution"
+      status: "proved"
+      note: "Unconditional; pointwise linear algebra."
+    - source: "Paper, Proposition 7.2; Moore–Schlafly 1980, Section 3 (invariant metric on V_i*)"
+      lean: "EquivEmbed.haar_averaged_inner_product"
+      module: "Solution"
+      status: "proved"
+      note: "Unconditional."
+    - source: "Paper, Theorem 6.2 (equivariant perturbation)"
+      lean: "EquivEmbed.equivariant_gunther_perturbation"
+      module: "Solution"
+      status: "partial"
+      note: "Conditional on a GuntherPackage at the given embedding."
+    - source: "Moore–Schlafly 1980, Main Theorem; paper, Section 8"
+      lean: "EquivEmbed.equivariant_isometric_embedding_conditional"
+      module: "Solution"
+      status: "partial"
+      note: "Conditional on four named hypotheses on an abstract EmbeddingProblem."
+
+acknowledgements: "Lean 4, Mathlib, and the Palomar template; J. D. Moore for the 1980 theorem."
