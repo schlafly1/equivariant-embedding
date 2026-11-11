@@ -11,8 +11,6 @@
     "EquivEmbed.equivariant_isometric_embedding_conditional"
   ],
   "definition_names": [
-    "EquivEmbed.EmbeddingProblem",
-    "EquivEmbed.GuntherPackage",
     "EquivEmbed.HasFreeEmbedding",
     "EquivEmbed.RealizableDense",
     "EquivEmbed.ConeCondition",

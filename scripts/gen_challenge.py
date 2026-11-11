@@ -144,8 +144,6 @@ theorem EquivEmbed.equivariant_isometric_embedding_conditional {G : Type} [Group
 ]
 
 DEF_NAMES = [
-    "EquivEmbed.EmbeddingProblem",
-    "EquivEmbed.GuntherPackage",
     "EquivEmbed.HasFreeEmbedding",
     "EquivEmbed.RealizableDense",
     "EquivEmbed.ConeCondition",
