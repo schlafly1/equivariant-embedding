@@ -19,8 +19,9 @@ An `EmbeddingProblem G` packages, for a fixed compact Riemannian `G`-manifold `M
 
 * `Met`: the space of smooth `G`-invariant symmetric 2-tensors on `M` with a `C^{2,α}` norm;
 * `pos ⊆ Met`: the positive definite ones;
-* `Map`: smooth maps `M → ℝᴺ` (any `N`) that are equivariant for some orthogonal
-  representation of `G`;
+* `Pt`: the points of `M`, with the action of `G`;
+* `Map = EquivariantMap G Pt`: maps `X : M → ℝᴺ` (any `N`) bundled with an orthogonal
+  representation `ρ` and a proof of `X (σ • p) = ρ σ (X p)`, so equivariance is built in;
 * `F : Map → Met`: the induced metric `F(X) = ∑ dXᵃ ⊗ dXᵃ`;
 * the elementary operations: direct sum `(X, Y)` and scaling `t X`, with
   `F(X, Y) = F X + F Y` and `F(t X) = t² F X`.
@@ -33,7 +34,8 @@ The hypotheses of `equivariant_isometric_embedding` are:
    metrics of equivariant maps (Step 2 of Moore–Schlafly; the invariant inner product used
    there is `EquivEmbed.avgForm`);
 3. `ConeCondition`: for `g` positive definite and any `X`, `g - c F(X)` is positive definite for
-   some `c > 0` (compactness of `M`);
+   some `c > 0` (it holds for all small `c > 0` by compactness of `M`, but only one `c` is
+   needed);
 4. `GuntherPackage`: for every free embedding `u`, Günther's (non-equivariant) analytic
    package: a Banach space `E` of `C^{2,α}` perturbations with an isometric linear `G`-action,
    a bounded linear `𝓜 : Met → E` with `G`-fixed values and a bounded bilinear equivariant
@@ -44,6 +46,9 @@ The hypotheses of `equivariant_isometric_embedding` are:
 
 Nothing in the hypotheses asserts the existence of an equivariant solution of the nonlinear
 problem: that is produced here by `EquivEmbed.exists_fixedPoint_bilinear_invariant`.
+
+The geometric meaning of `Met`, `pos`, `F`, `IsFree` and `IsEmbedding` (beyond injectivity) is
+not encoded; it is supplied by an instantiation of `EmbeddingProblem` for an actual manifold.
 -/
 
 @[expose] public section
@@ -59,7 +64,8 @@ every sufficiently small invariant metric perturbation is realized by an equivar
 embedding. -/
 theorem equivariant_perturbation {P : EmbeddingProblem G} {u : P.Map}
     (D : GuntherPackage P u) :
-    ∃ ε > 0, ∀ h : P.Met, ‖h‖ < ε → ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = P.F u + h := by
+    ∃ ε > 0, ∀ h : P.Met, ‖h‖ < ε → ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = P.F u + h ∧
+      ∀ (σ : G) (p : P.Pt), X.toFun (σ • p) = X.ρ σ (X.toFun p) := by
   obtain ⟨r, hr, hreg⟩ := D.regularity
   obtain ⟨δ, hδ, hemb⟩ := D.isEmbedding_perturb
   set η : ℝ := min (min δ r / 2) (1 / (4 * ‖D.B‖ + 1)) with hη
@@ -88,7 +94,7 @@ theorem equivariant_perturbation {P : EmbeddingProblem G} {u : P.Map}
     linarith
   have hvs : v ∈ D.Smooth := hreg h v (lt_of_lt_of_le hv2 (min_le_right _ _)) hvf
   exact ⟨D.perturb v hvs hvG, hemb v hvs hvG (lt_of_lt_of_le hv2 (min_le_left _ _)),
-    D.F_perturb h v hvs hvG hvf⟩
+    D.F_perturb h v hvs hvG hvf, (D.perturb v hvs hvG).equivariant⟩
 
 /-- **Equivariant isometric embedding theorem (conditional form).**  Under the four
 hypotheses above, every positive definite invariant metric is induced by an equivariant
@@ -96,14 +102,15 @@ embedding. -/
 theorem equivariant_isometric_embedding (P : EmbeddingProblem G)
     (h1 : HasFreeEmbedding P) (h2 : RealizableDense P) (h3 : ConeCondition P)
     (h4 : HasGuntherPackages P) :
-    ∀ g ∈ P.pos, ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = g := by
+    ∀ g ∈ P.pos, ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = g ∧
+      ∀ (σ : G) (p : P.Pt), X.toFun (σ • p) = X.ρ σ (X.toFun p) := by
   intro g hg
   obtain ⟨u₀, hu₀e, hu₀f⟩ := h1
   obtain ⟨c, hc, hgc⟩ := h3 g hg u₀
   -- rescale the free embedding: `F(√c u₀) = c F(u₀)`
   set t := Real.sqrt c with ht
   have ht0 : t ≠ 0 := (Real.sqrt_pos.mpr hc).ne'
-  set u₁ := P.smul t u₀
+  set u₁ := u₀.smul t
   have hFu₁ : P.F u₁ = c • P.F u₀ := by
     rw [P.F_smul, ht, Real.sq_sqrt hc.le]
   obtain ⟨D⟩ := h4 u₁ (P.isEmbedding_smul t u₀ ht0 hu₀e) (P.isFree_smul t u₀ ht0 hu₀f)
@@ -111,8 +118,8 @@ theorem equivariant_isometric_embedding (P : EmbeddingProblem G)
   -- approximate `g - c F(u₀)` by a realizable metric `F(X₂)`
   obtain ⟨X₂, hX₂⟩ := h2 _ hgc ε hε
   -- realize `g - F(X₂) = F(u₁) + h` by a perturbation of `u₁`
-  obtain ⟨X₁, hX₁e, hX₁F⟩ := hpert (g - c • P.F u₀ - P.F X₂) hX₂
-  refine ⟨P.sum X₁ X₂, P.isEmbedding_sum X₁ X₂ hX₁e, ?_⟩
+  obtain ⟨X₁, hX₁e, hX₁F, -⟩ := hpert (g - c • P.F u₀ - P.F X₂) hX₂
+  refine ⟨P.sum X₁ X₂, P.isEmbedding_sum X₁ X₂ hX₁e, ?_, (P.sum X₁ X₂).equivariant⟩
   rw [P.F_sum, hX₁F, hFu₁]
   abel
 

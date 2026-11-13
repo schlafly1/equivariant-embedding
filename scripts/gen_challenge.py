@@ -121,29 +121,33 @@ theorem EquivEmbed.haar_averaged_inner_product
         "equivariant_gunther_perturbation",
         r"""/-- **Equivariant Günther perturbation theorem.**  At an embedding `u` admitting Günther's
 analytic package, every sufficiently small `G`-invariant metric perturbation `h` is realized by
-an equivariant embedding: `F(X) = F(u) + h`. -/
+an embedding `X` with `F(X) = F(u) + h`, and `X` is `G`-equivariant. -/
 theorem EquivEmbed.equivariant_gunther_perturbation {G : Type} [Group G]
     {P : EquivEmbed.EmbeddingProblem G} {u : P.Map} (D : EquivEmbed.GuntherPackage P u) :
-    ∃ ε > 0, ∀ h : P.Met, ‖h‖ < ε → ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = P.F u + h""",
+    ∃ ε > 0, ∀ h : P.Met, ‖h‖ < ε → ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = P.F u + h ∧
+      ∀ (σ : G) (p : P.Pt), X.toFun (σ • p) = X.ρ σ (X.toFun p)""",
         r"""EquivEmbed.equivariant_perturbation D""",
     ),
     (
         "equivariant_isometric_embedding_conditional",
         r"""/-- **Moore–Schlafly equivariant isometric embedding theorem, via Günther's method
 (conditional form).**  Given (1) a free equivariant embedding, (2) density of realizable
-invariant metrics, (3) the cone condition, and (4) Günther's non-equivariant analytic package at
+invariant metrics, (3) the cone condition (for some `c > 0`), and (4) Günther's non-equivariant analytic package at
 free embeddings, every positive definite `G`-invariant metric is induced by a `G`-equivariant
 embedding. -/
 theorem EquivEmbed.equivariant_isometric_embedding_conditional {G : Type} [Group G]
     (P : EquivEmbed.EmbeddingProblem G) (h1 : EquivEmbed.HasFreeEmbedding P)
     (h2 : EquivEmbed.RealizableDense P) (h3 : EquivEmbed.ConeCondition P)
     (h4 : EquivEmbed.HasGuntherPackages P) :
-    ∀ g ∈ P.pos, ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = g""",
+    ∀ g ∈ P.pos, ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = g ∧
+      ∀ (σ : G) (p : P.Pt), X.toFun (σ • p) = X.ρ σ (X.toFun p)""",
         r"""EquivEmbed.equivariant_isometric_embedding P h1 h2 h3 h4""",
     ),
 ]
 
 DEF_NAMES = [
+    "EquivEmbed.EquivariantMap.smul",
+    "EquivEmbed.EmbeddingProblem.Map",
     "EquivEmbed.HasFreeEmbedding",
     "EquivEmbed.RealizableDense",
     "EquivEmbed.ConeCondition",
@@ -157,7 +161,8 @@ public import Mathlib.LinearAlgebra.Dual.Defs
 public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.MeasureTheory.Group.Integral
 public import Mathlib.MeasureTheory.Measure.OpenPos
-public import Mathlib.RepresentationTheory.Basic"""
+public import Mathlib.RepresentationTheory.Basic
+public import Mathlib.Analysis.InnerProductSpace.PiL2"""
 
 CHALLENGE_DOC = """/-!
 # Equivariant isometric embeddings via Günther's method: advertised statements
@@ -181,6 +186,13 @@ yet have Hölder spaces on manifolds, the Laplace–Beltrami operator or ellipti
 those analytic inputs are hypotheses here: Mostow–Palais, Step 2 density, compactness, and
 Günther's non-equivariant analytic package.  No hypothesis asserts that an equivariant solution
 of the nonlinear problem exists.
+
+Equivariance is enforced by the types: maps are `EquivariantMap`s (a function `Pt → ℝᴺ`, an
+orthogonal representation `ρ`, and a proof of `X (σ • p) = ρ σ (X p)`), and the conclusions
+restate it.  The geometric meaning of `Met`, `pos`, `F`, `IsFree` and `IsEmbedding` (beyond
+injectivity, which is a field) is not encoded: the theorems apply to any instantiation of
+`EmbeddingProblem`, and their geometric reading requires an instantiation for an actual compact
+Riemannian `G`-manifold.
 -/"""
 
 

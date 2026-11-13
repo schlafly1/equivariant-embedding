@@ -103,20 +103,22 @@ theorem EquivEmbed.haar_averaged_inner_product
 
 /-- **Equivariant Günther perturbation theorem.**  At an embedding `u` admitting Günther's
 analytic package, every sufficiently small `G`-invariant metric perturbation `h` is realized by
-an equivariant embedding: `F(X) = F(u) + h`. -/
+an embedding `X` with `F(X) = F(u) + h`, and `X` is `G`-equivariant. -/
 theorem EquivEmbed.equivariant_gunther_perturbation {G : Type} [Group G]
     {P : EquivEmbed.EmbeddingProblem G} {u : P.Map} (D : EquivEmbed.GuntherPackage P u) :
-    ∃ ε > 0, ∀ h : P.Met, ‖h‖ < ε → ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = P.F u + h :=
+    ∃ ε > 0, ∀ h : P.Met, ‖h‖ < ε → ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = P.F u + h ∧
+      ∀ (σ : G) (p : P.Pt), X.toFun (σ • p) = X.ρ σ (X.toFun p) :=
   EquivEmbed.equivariant_perturbation D
 
 /-- **Moore–Schlafly equivariant isometric embedding theorem, via Günther's method
 (conditional form).**  Given (1) a free equivariant embedding, (2) density of realizable
-invariant metrics, (3) the cone condition, and (4) Günther's non-equivariant analytic package at
+invariant metrics, (3) the cone condition (for some `c > 0`), and (4) Günther's non-equivariant analytic package at
 free embeddings, every positive definite `G`-invariant metric is induced by a `G`-equivariant
 embedding. -/
 theorem EquivEmbed.equivariant_isometric_embedding_conditional {G : Type} [Group G]
     (P : EquivEmbed.EmbeddingProblem G) (h1 : EquivEmbed.HasFreeEmbedding P)
     (h2 : EquivEmbed.RealizableDense P) (h3 : EquivEmbed.ConeCondition P)
     (h4 : EquivEmbed.HasGuntherPackages P) :
-    ∀ g ∈ P.pos, ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = g :=
+    ∀ g ∈ P.pos, ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = g ∧
+      ∀ (σ : G) (p : P.Pt), X.toFun (σ • p) = X.ρ σ (X.toFun p) :=
   EquivEmbed.equivariant_isometric_embedding P h1 h2 h3 h4

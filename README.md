@@ -46,6 +46,15 @@ operator or elliptic regularity, so these enter as hypotheses. No hypothesis ass
 existence of an equivariant solution of the nonlinear problem; Lean produces it from the
 fixed point theorem.
 
+Equivariance is enforced by the types: maps are `EquivariantMap`s (a function `Pt → ℝᴺ`, an
+orthogonal representation `ρ`, and a proof of `X (σ • p) = ρ σ (X p)`), and the conclusions restate
+it. The cone condition assumes positivity of `g − c F(X)` for some `c > 0` (one `c` suffices). The
+geometric meaning of the metric space `Met`, the positive cone `pos`, the induced metric `F`,
+freeness, and being an embedding (beyond injectivity, which is required) is not encoded in Lean:
+the theorem holds for every instantiation of `EmbeddingProblem`, and its reading as a statement
+about Riemannian manifolds depends on an instantiation for an actual manifold, which the paper
+describes but which is not formalized.
+
 ## Building
 
 ```

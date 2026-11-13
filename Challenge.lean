@@ -8,6 +8,7 @@ public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.MeasureTheory.Group.Integral
 public import Mathlib.MeasureTheory.Measure.OpenPos
 public import Mathlib.RepresentationTheory.Basic
+public import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
 # Equivariant isometric embeddings via Günther's method: advertised statements
@@ -31,62 +32,95 @@ yet have Hölder spaces on manifolds, the Laplace–Beltrami operator or ellipti
 those analytic inputs are hypotheses here: Mostow–Palais, Step 2 density, compactness, and
 Günther's non-equivariant analytic package.  No hypothesis asserts that an equivariant solution
 of the nonlinear problem exists.
+
+Equivariance is enforced by the types: maps are `EquivariantMap`s (a function `Pt → ℝᴺ`, an
+orthogonal representation `ρ`, and a proof of `X (σ • p) = ρ σ (X p)`), and the conclusions
+restate it.  The geometric meaning of `Met`, `pos`, `F`, `IsFree` and `IsEmbedding` (beyond
+injectivity, which is a field) is not encoded: the theorems apply to any instantiation of
+`EmbeddingProblem`, and their geometric reading requires an instantiation for an actual compact
+Riemannian `G`-manifold.
 -/
 
 @[expose] public section
 
 namespace EquivEmbed
 
+/-- A `G`-equivariant map `Pt → ℝᴺ`: a function `toFun` together with an orthogonal
+representation `ρ` of `G` on `ℝᴺ` such that `toFun (σ • p) = ρ σ (toFun p)`. -/
+structure EquivariantMap (G : Type) [Group G] (Pt : Type) [MulAction G Pt] where
+  /-- The dimension of the target. -/
+  N : ℕ
+  /-- The orthogonal representation of `G` on `ℝᴺ`. -/
+  ρ : G →* (EuclideanSpace ℝ (Fin N) ≃ₗᵢ[ℝ] EuclideanSpace ℝ (Fin N))
+  /-- The underlying function. -/
+  toFun : Pt → EuclideanSpace ℝ (Fin N)
+  /-- Equivariance. -/
+  equivariant : ∀ (σ : G) (p : Pt), toFun (σ • p) = ρ σ (toFun p)
+
+/-- The scaled map `t X`, with the same representation. -/
+def EquivariantMap.smul {G : Type} [Group G] {Pt : Type} [MulAction G Pt] (t : ℝ)
+    (X : EquivariantMap G Pt) : EquivariantMap G Pt where
+  N := X.N
+  ρ := X.ρ
+  toFun p := t • X.toFun p
+  equivariant σ p := by rw [X.equivariant, LinearIsometryEquiv.map_smul]
+
 /-- Abstract data of the equivariant isometric embedding problem for a compact Riemannian
-manifold with an isometric action of `G`. -/
+manifold with an isometric action of `G`.  The intended meaning of each field is in its
+docstring; only the stated properties are enforced. -/
 structure EmbeddingProblem (G : Type) [Group G] where
-  /-- Smooth `G`-invariant symmetric 2-tensors on `M`, normed by a `C^{2,α}` norm. -/
+  /-- The points of the manifold `M`. -/
+  Pt : Type
+  [instMulAction : MulAction G Pt]
+  /-- Intended: smooth `G`-invariant symmetric 2-tensors on `M`, with a `C^{2,α}` norm. -/
   Met : Type
   [instNormedAddCommGroup : NormedAddCommGroup Met]
   [instNormedSpace : NormedSpace ℝ Met]
-  /-- The positive definite elements of `Met`. -/
+  /-- Intended: the positive definite elements of `Met`. -/
   pos : Set Met
-  /-- Smooth maps `M → ℝᴺ`, equivariant for some orthogonal representation of `G`. -/
-  Map : Type
-  /-- The induced metric `F(X) = ∑ₐ dXᵃ ⊗ dXᵃ`. -/
-  F : Map → Met
-  /-- `X` is an embedding. -/
-  IsEmbedding : Map → Prop
-  /-- `X` is free: first and second derivatives are linearly independent everywhere. -/
-  IsFree : Map → Prop
-  /-- The direct sum `(X, Y) : M → ℝ^{N₁} ⊕ ℝ^{N₂}`. -/
-  sum : Map → Map → Map
+  /-- Intended: the induced metric `F(X) = ∑ₐ dXᵃ ⊗ dXᵃ`. -/
+  F : EquivariantMap G Pt → Met
+  /-- Intended: `X` is a smooth embedding.  Enforced: `X` is injective. -/
+  IsEmbedding : EquivariantMap G Pt → Prop
+  injective_of_isEmbedding : ∀ X, IsEmbedding X → Function.Injective X.toFun
+  /-- Intended: `X` is free (first and second derivatives linearly independent everywhere). -/
+  IsFree : EquivariantMap G Pt → Prop
+  /-- Intended: the direct sum `(X, Y) : M → ℝ^{N₁} ⊕ ℝ^{N₂}` with representation `ρ₁ ⊕ ρ₂`. -/
+  sum : EquivariantMap G Pt → EquivariantMap G Pt → EquivariantMap G Pt
   F_sum : ∀ X Y, F (sum X Y) = F X + F Y
   isEmbedding_sum : ∀ X Y, IsEmbedding X → IsEmbedding (sum X Y)
-  /-- Scaling `t X`. -/
-  smul : ℝ → Map → Map
-  F_smul : ∀ t X, F (smul t X) = (t ^ 2) • F X
-  isEmbedding_smul : ∀ t X, t ≠ 0 → IsEmbedding X → IsEmbedding (smul t X)
-  isFree_smul : ∀ t X, t ≠ 0 → IsFree X → IsFree (smul t X)
+  F_smul : ∀ (t : ℝ) (X : EquivariantMap G Pt), F (X.smul t) = (t ^ 2) • F X
+  isEmbedding_smul : ∀ (t : ℝ) (X : EquivariantMap G Pt), t ≠ 0 → IsEmbedding X →
+    IsEmbedding (X.smul t)
+  isFree_smul : ∀ (t : ℝ) (X : EquivariantMap G Pt), t ≠ 0 → IsFree X → IsFree (X.smul t)
 
-attribute [instance] EmbeddingProblem.instNormedAddCommGroup EmbeddingProblem.instNormedSpace
+attribute [instance] EmbeddingProblem.instMulAction EmbeddingProblem.instNormedAddCommGroup
+  EmbeddingProblem.instNormedSpace
 
 variable {G : Type} [Group G]
 
-/-- Günther's analytic package at a free embedding `u`. -/
+/-- The equivariant maps of an embedding problem. -/
+abbrev EmbeddingProblem.Map (P : EmbeddingProblem G) : Type := EquivariantMap G P.Pt
+
+/-- Günther's analytic package at an embedding `u`. -/
 structure GuntherPackage (P : EmbeddingProblem G) (u : P.Map) where
-  /-- A Banach space of `C^{2,α}` perturbations `v : M → ℝᴺ`. -/
+  /-- Intended: a Banach space of `C^{2,α}` perturbations `v : M → ℝᴺ`. -/
   E : Type
   [instNormedAddCommGroup : NormedAddCommGroup E]
   [instNormedSpace : NormedSpace ℝ E]
   [instCompleteSpace : CompleteSpace E]
-  /-- The action `(σ · v)(x) = ρ(σ) v(σ⁻¹ x)`. -/
+  /-- Intended: the action `(σ · v)(x) = ρ(σ) v(σ⁻¹ x)`. -/
   [instAction : DistribMulAction G E]
   [instIsometric : IsIsometricSMul G E]
-  /-- The linear part `𝓜 h = L(u)(0, -h/2)`. -/
+  /-- Intended: the linear part `𝓜 h = L(u)(0, -h/2)`. -/
   M : P.Met →L[ℝ] E
-  /-- The quadratic part `𝓑(v, w) = L(u)((Δ - 1)⁻¹ Q(v, w))`. -/
+  /-- Intended: the quadratic part `𝓑(v, w) = L(u)((Δ - 1)⁻¹ Q(v, w))`. -/
   B : E →L[ℝ] E →L[ℝ] E
   M_fixed : ∀ (σ : G) (h : P.Met), σ • M h = M h
   B_equivariant : ∀ (σ : G) (v w : E), B (σ • v) (σ • w) = σ • B v w
-  /-- The set of smooth perturbations. -/
+  /-- Intended: the set of smooth perturbations. -/
   Smooth : Set E
-  /-- `u + v`, for a smooth `G`-fixed perturbation `v`. -/
+  /-- Intended: `u + v`, for a smooth `G`-fixed perturbation `v`. -/
   perturb : (v : E) → v ∈ Smooth → (∀ σ : G, σ • v = v) → P.Map
   /-- Günther's identity: a solution of the fixed point equation solves the embedding
   equation. -/
@@ -109,7 +143,9 @@ def HasFreeEmbedding (P : EmbeddingProblem G) : Prop :=
 def RealizableDense (P : EmbeddingProblem G) : Prop :=
   ∀ g ∈ P.pos, ∀ ε > 0, ∃ X : P.Map, ‖g - P.F X‖ < ε
 
-/-- Hypothesis 3: `g - c F(X)` is positive definite for small `c > 0`. -/
+/-- Hypothesis 3 (cone condition): for every positive definite `g` and every map `X`,
+`g - c F(X)` is positive definite for *some* `c > 0`.  (Geometrically it holds for all small
+`c > 0` by compactness; only the existence of one such `c` is assumed and used.) -/
 def ConeCondition (P : EmbeddingProblem G) : Prop :=
   ∀ g ∈ P.pos, ∀ X : P.Map, ∃ c : ℝ, 0 < c ∧ g - c • P.F X ∈ P.pos
 
@@ -199,20 +235,22 @@ theorem EquivEmbed.haar_averaged_inner_product
 
 /-- **Equivariant Günther perturbation theorem.**  At an embedding `u` admitting Günther's
 analytic package, every sufficiently small `G`-invariant metric perturbation `h` is realized by
-an equivariant embedding: `F(X) = F(u) + h`. -/
+an embedding `X` with `F(X) = F(u) + h`, and `X` is `G`-equivariant. -/
 theorem EquivEmbed.equivariant_gunther_perturbation {G : Type} [Group G]
     {P : EquivEmbed.EmbeddingProblem G} {u : P.Map} (D : EquivEmbed.GuntherPackage P u) :
-    ∃ ε > 0, ∀ h : P.Met, ‖h‖ < ε → ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = P.F u + h := by
+    ∃ ε > 0, ∀ h : P.Met, ‖h‖ < ε → ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = P.F u + h ∧
+      ∀ (σ : G) (p : P.Pt), X.toFun (σ • p) = X.ρ σ (X.toFun p) := by
   sorry
 
 /-- **Moore–Schlafly equivariant isometric embedding theorem, via Günther's method
 (conditional form).**  Given (1) a free equivariant embedding, (2) density of realizable
-invariant metrics, (3) the cone condition, and (4) Günther's non-equivariant analytic package at
+invariant metrics, (3) the cone condition (for some `c > 0`), and (4) Günther's non-equivariant analytic package at
 free embeddings, every positive definite `G`-invariant metric is induced by a `G`-equivariant
 embedding. -/
 theorem EquivEmbed.equivariant_isometric_embedding_conditional {G : Type} [Group G]
     (P : EquivEmbed.EmbeddingProblem G) (h1 : EquivEmbed.HasFreeEmbedding P)
     (h2 : EquivEmbed.RealizableDense P) (h3 : EquivEmbed.ConeCondition P)
     (h4 : EquivEmbed.HasGuntherPackages P) :
-    ∀ g ∈ P.pos, ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = g := by
+    ∀ g ∈ P.pos, ∃ X : P.Map, P.IsEmbedding X ∧ P.F X = g ∧
+      ∀ (σ : G) (p : P.Pt), X.toFun (σ • p) = X.ρ σ (X.toFun p) := by
   sorry

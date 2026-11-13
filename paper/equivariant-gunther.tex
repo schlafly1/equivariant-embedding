@@ -594,13 +594,24 @@ linear functionals, Bochner integrals with respect to a left-invariant measure, 
 \texttt{Representation}.
 
 \subsection{The conditional main theorem}
-An abstract structure \lean{EmbeddingProblem} records a normed space \texttt{Met} (invariant
-$C^{2,\alpha}$ tensors), a subset \texttt{pos} (positive definite tensors), a type \texttt{Map}
-(smooth equivariant maps into orthogonal representations), the induced metric
-$F\colon\texttt{Map}\to\texttt{Met}$, predicates for being an embedding and being free, and the
-direct sum and scaling operations with the identities~\eqref{eq:F-additive}. The theorem
-\lean{equivariant_isometric_embedding_conditional} states that every element of \texttt{pos} equals
-$F(X)$ for an embedding $X$, under the four hypotheses in Table~\ref{tab:hypotheses}.
+Maps are elements of the structure \lean{EquivariantMap}: a function
+$X\colon\texttt{Pt}\to\mathbb{R}^N$ on a type \texttt{Pt} with a $G$-action, bundled with a
+homomorphism $\rho$ from $G$ to the linear isometries of $\mathbb{R}^N$ and a proof that
+$X(\sigma p)=\rho(\sigma)X(p)$. Equivariance is thus enforced by the types, and the conclusions of
+the theorems restate it. An abstract structure \lean{EmbeddingProblem} records the type
+\texttt{Pt} (the points of $M$), a normed space \texttt{Met} (intended: invariant
+$C^{2,\alpha}$ tensors), a subset \texttt{pos} (intended: positive definite tensors), the induced
+metric $F$ from equivariant maps to \texttt{Met}, predicates for being an embedding (required to
+imply injectivity) and being free, and the direct sum, with the identities~\eqref{eq:F-additive}
+for the sum and for scaling. The theorem \lean{equivariant_isometric_embedding_conditional} states
+that every element of \texttt{pos} equals $F(X)$ for an equivariant embedding $X$, under the four
+hypotheses in Table~\ref{tab:hypotheses}.
+
+The geometric meaning of \texttt{Met}, \texttt{pos}, $F$, freeness and being an embedding (beyond
+injectivity) is not encoded in Lean. The theorem holds for every instantiation of
+\lean{EmbeddingProblem}; its reading as a statement about Riemannian manifolds depends on an
+instantiation for an actual compact Riemannian $G$-manifold, which is given by
+Sections~\ref{sec:right-inverse}--\ref{sec:proof} but is not formalized.
 
 \begin{table}[ht]
 \caption{Hypotheses of the conditional main theorem.}\label{tab:hypotheses}
@@ -610,7 +621,7 @@ Lean hypothesis & Content & Justification\\
 \midrule
 \lean{HasFreeEmbedding} & a free equivariant embedding exists & Mostow--Palais and Prop.~\ref{prop:veronese}\\
 \lean{RealizableDense} & realizable metrics are dense in \texttt{pos} & Prop.~\ref{prop:approx}\\
-\lean{ConeCondition} & $g-cF(X)\in\texttt{pos}$ for some $c>0$ & compactness of $M$\\
+\lean{ConeCondition} & $g-cF(X)\in\texttt{pos}$ for some $c>0$ (one $c$ suffices) & compactness of $M$\\
 \lean{HasGuntherPackages} & at each free embedding: $E$, $\cM$, $\cB$ as in Prop.~\ref{prop:gunther-package}, \ref{F:regularity}, \ref{F:open} & Sections~\ref{sec:right-inverse}--\ref{sec:gunther}\\
 \bottomrule
 \end{tabular}

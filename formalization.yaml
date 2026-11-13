@@ -68,7 +68,8 @@ status:
     Haar-averaged form ∫ φ(σ⁻¹x) φ(σ⁻¹y) dμ (symmetric, bilinear, invariant, positive
     definite). Formalized conditionally: the main theorem and the equivariant perturbation
     theorem for an abstract EmbeddingProblem, assuming (1) a free equivariant embedding exists,
-    (2) realizable metrics are dense, (3) the cone condition, and (4) Günther's
+    (2) realizable metrics are dense, (3) the cone condition (positivity of g − c F(X) for some
+    c > 0), and (4) Günther's
     non-equivariant analytic package (Banach space, bounded linear M with G-fixed values,
     bounded bilinear equivariant B, Günther's identity, regularity, openness of embeddings).
     Not formalized: manifolds, Hölder spaces of sections, the Laplace–Beltrami operator,
@@ -106,7 +107,12 @@ fidelity:
   divergences: >-
     The main theorem is proved only in a conditional, abstract form: the geometric objects are
     modeled by an abstract structure (EmbeddingProblem) and the classical analytic inputs are
-    hypotheses. The Veronese freeness statement is pointwise linear algebra in coordinates, with
+    hypotheses. Equivariance of maps is enforced by the type EquivariantMap and restated in the
+    conclusions, and embeddings are required to be injective; the geometric meaning of Met, pos,
+    F, freeness and being an embedding is otherwise not encoded, so the conclusions have their
+    geometric reading only for an instantiation of EmbeddingProblem by an actual compact
+    Riemannian G-manifold, which is described in the paper but not formalized. The Veronese
+    freeness statement is pointwise linear algebra in coordinates, with
     the Sym² component tested against all products of linear functionals. The averaged inner
     product is stated for any finite left-invariant measure that is positive on open sets, not
     specifically for Haar measure.
@@ -117,8 +123,8 @@ review:
     - "none"
   notes: >-
     Lean checks the statements in Challenge.lean against Solution.lean. A human audit of
-    Challenge.lean is still needed, in particular of the structures EmbeddingProblem and
-    GuntherPackage.
+    Challenge.lean is still needed, in particular of the structures EquivariantMap,
+    EmbeddingProblem and GuntherPackage.
 
 alignment:
   namespace: "EquivEmbed"
