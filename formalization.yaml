@@ -9,11 +9,19 @@ project:
     by Günther's method, of the Moore–Schlafly theorem (Math. Z. 173, 1980): a compact
     Riemannian manifold with an isometric action of a compact Lie group has an isometric
     embedding into Euclidean space that is equivariant for an orthogonal representation. It
-    proves unconditionally the equivariant Günther fixed point theorem, the uniqueness, least-norm
+    proves unconditionally, with no analytic hypotheses, the equivariant Günther perturbation
+    theorem on the flat torus ℝⁿ/2πℤⁿ: for a map u whose first and second derivatives have a
+    dual frame, with Fourier coefficients in a weighted Wiener algebra, every small symmetric h
+    is realized as a metric perturbation, ⟨∂ᵢ(u+v), ∂ⱼ(u+v)⟩ = ⟨∂ᵢu, ∂ⱼu⟩ + hᵢⱼ pointwise,
+    with a linear bound on v, and u+v inherits every translation-and-rotation symmetry of the
+    data and is real if the data are real. It also proves unconditionally the equivariant
+    Günther fixed point theorem in a Banach space, together with the equivariance of its
+    solution map and its Lipschitz dependence on the data; the uniqueness, least-norm
     property, equivariance and coordinate independence of the pointwise Nash–Günther right
-    inverse, the freeness of the Veronese map, and the Haar-averaged invariant inner product
-    used in the approximation step. It proves the main theorem conditionally, from explicitly
-    stated analytic hypotheses on an abstract embedding problem.
+    inverse; the freeness of the Veronese map; and the Haar-averaged invariant inner product
+    used in the approximation step. It proves the main theorem for general compact manifolds
+    only conditionally, from explicitly stated analytic hypotheses on an abstract embedding
+    problem.
   authors:
     - "Roger Schlafly"
   license: "Apache-2.0"
@@ -95,7 +103,7 @@ status:
 automation:
   methods:
     - method: "agent"
-      models: ["Claude Opus 5.5"]
+      models: ["Claude Opus 5.5", "Claude Fable 5.2"]
       framework: "Claude Code"
       tool_setup: >-
         An AI agent wrote the Lean files and compiled them against Mathlib with lake, read the
