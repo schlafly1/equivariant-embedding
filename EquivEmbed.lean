@@ -6,3 +6,5 @@ public import EquivEmbed.Veronese
 public import EquivEmbed.Averaging
 public import EquivEmbed.Defs
 public import EquivEmbed.Assembly
+public import EquivEmbed.Torus.Main
+public import EquivEmbed.Torus.Example

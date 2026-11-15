@@ -32,7 +32,9 @@ In this file we prove the abstract statements used in the equivariant version:
   isometric additive maps, `m` is `G`-fixed and `Q` is `G`-equivariant, then the solution is
   `G`-fixed.  (No averaging of the nonlinear solution is involved.)
 * bilinear versions `EquivEmbed.exists_unique_fixedPoint_bilinear` and
-  `EquivEmbed.fixedPoint_bilinear_smul_eq`.
+  `EquivEmbed.exists_fixedPoint_bilinear_invariant`.
+* `EquivEmbed.solution_bilinear_smul` and `EquivEmbed.solution_bilinear_lipschitz`: the map
+  sending `m` to the small solution commutes with `G` and is Lipschitz.
 -/
 
 @[expose] public section
@@ -187,6 +189,61 @@ theorem exists_fixedPoint_bilinear_invariant {G : Type*} [Monoid G] [DistribMulA
     ∃ v : E, ‖v‖ ≤ 2 * ‖m‖ ∧ v = m + B v v ∧ ∀ g : G, g • v = v :=
   exists_fixedPoint_quadratic_invariant (norm_nonneg B) (quadraticBound_bilinear B)
     (by simp) hm hmG (fun g v => hBG g v v)
+
+omit [CompleteSpace E] in
+/-- **The solution map is equivariant.**  If `v` is the small solution of `v = m + B(v, v)`
+and `w` is a small solution of `w = g • m + B(w, w)`, then `w = g • v`. -/
+theorem solution_bilinear_smul {G : Type*} [Monoid G] [DistribMulAction G E]
+    [IsIsometricSMul G E] (B : E →L[ℝ] E →L[ℝ] E)
+    (hBG : ∀ (g : G) (v w : E), B (g • v) (g • w) = g • B v w) {m v : E}
+    (hm : 4 * ‖B‖ * ‖m‖ < 1) (hv : ‖v‖ ≤ 2 * ‖m‖) (hvf : v = m + B v v) (g : G) :
+    ‖g • v‖ ≤ 2 * ‖g • m‖ ∧ g • v = g • m + B (g • v) (g • v) ∧
+      ∀ w : E, ‖w‖ ≤ 2 * ‖g • m‖ → w = g • m + B w w → w = g • v := by
+  have hn : ∀ x : E, ‖g • x‖ = ‖x‖ := fun x => by
+    simpa [dist_zero_right, smul_zero] using dist_smul g x (0 : E)
+  have hgv : g • v = g • m + B (g • v) (g • v) := by
+    rw [hBG, ← smul_add, ← hvf]
+  refine ⟨by rw [hn, hn]; exact hv, hgv, fun w hw hwf => ?_⟩
+  have hgm : 4 * ‖B‖ * ‖g • m‖ < 1 := by rw [hn]; exact hm
+  refine fixedPoint_quadratic_unique (norm_nonneg B) (quadraticBound_bilinear B) hgm
+    (mem_closedBall_zero_iff.mpr hw) hwf (mem_closedBall_zero_iff.mpr ?_) hgv
+  rw [hn, hn]; exact hv
+
+omit [CompleteSpace E] in
+/-- **Symmetry of the small solution, for a single symmetry.**  If `T` is an additive norm
+preserving map with `T m = m` and `T (B v w) = B (T v) (T w)`, then `T` fixes the small solution
+of `v = m + B(v, v)`. -/
+theorem fixedPoint_bilinear_symm (B : E →L[ℝ] E →L[ℝ] E) (T : E → E)
+    (hTn : ∀ v, ‖T v‖ = ‖v‖) (hTa : ∀ v w, T (v + w) = T v + T w)
+    (hTB : ∀ v w, T (B v w) = B (T v) (T w)) {m v : E} (hm : 4 * ‖B‖ * ‖m‖ < 1)
+    (hTm : T m = m) (hv : ‖v‖ ≤ 2 * ‖m‖) (hvf : v = m + B v v) : T v = v := by
+  refine fixedPoint_quadratic_unique (norm_nonneg B) (quadraticBound_bilinear B) hm
+    (mem_closedBall_zero_iff.mpr ?_) ?_ (mem_closedBall_zero_iff.mpr hv) hvf
+  · rw [hTn]; exact hv
+  · show T v = m + B (T v) (T v)
+    conv_lhs => rw [hvf]
+    rw [hTa, hTm, hTB]
+
+omit [CompleteSpace E] in
+/-- **Lipschitz dependence of the small solution on the data.** -/
+theorem solution_bilinear_lipschitz (B : E →L[ℝ] E →L[ℝ] E) {m m' v v' : E}
+    (hv : ‖v‖ ≤ 2 * ‖m‖) (hvf : v = m + B v v) (hv' : ‖v'‖ ≤ 2 * ‖m'‖)
+    (hvf' : v' = m' + B v' v') :
+    (1 - 2 * ‖B‖ * (‖m‖ + ‖m'‖)) * ‖v - v'‖ ≤ ‖m - m'‖ := by
+  have hq : ‖B v v - B v' v'‖ ≤ ‖B‖ * (‖v‖ + ‖v'‖) * ‖v - v'‖ := quadraticBound_bilinear B v v'
+  have hsplit : v - v' = (m - m') + (B v v - B v' v') := by
+    calc v - v' = (m + B v v) - (m' + B v' v') := by rw [← hvf, ← hvf']
+      _ = (m - m') + (B v v - B v' v') := by abel
+  have h1 : ‖v - v'‖ ≤ ‖m - m'‖ + ‖B v v - B v' v'‖ := by
+    calc ‖v - v'‖ = ‖(m - m') + (B v v - B v' v')‖ := congrArg norm hsplit
+      _ ≤ ‖m - m'‖ + ‖B v v - B v' v'‖ := norm_add_le _ _
+  have hB : 0 ≤ ‖B‖ := norm_nonneg B
+  have hd : 0 ≤ ‖v - v'‖ := norm_nonneg _
+  have h2 : ‖B‖ * (‖v‖ + ‖v'‖) ≤ 2 * ‖B‖ * (‖m‖ + ‖m'‖) := by
+    have := mul_le_mul_of_nonneg_left (add_le_add hv hv') hB
+    nlinarith
+  have h3 := mul_le_mul_of_nonneg_right h2 hd
+  nlinarith
 
 end bilinear
 

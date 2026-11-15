@@ -3,6 +3,9 @@
   "solution_module": "Solution",
   "theorem_names": [
     "EquivEmbed.gunther_fixed_point_equivariant",
+    "EquivEmbed.gunther_solution_map_equivariant",
+    "EquivEmbed.gunther_solution_map_lipschitz",
+    "EquivEmbed.flat_torus_equivariant_perturbation",
     "EquivEmbed.nash_gunther_right_inverse",
     "EquivEmbed.nash_gunther_right_inverse_equivariant",
     "EquivEmbed.veronese_map_free",
@@ -16,7 +19,13 @@
     "EquivEmbed.HasFreeEmbedding",
     "EquivEmbed.RealizableDense",
     "EquivEmbed.ConeCondition",
-    "EquivEmbed.HasGuntherPackages"
+    "EquivEmbed.HasGuntherPackages",
+    "EquivEmbed.Torus.Freq",
+    "EquivEmbed.Torus.sq",
+    "EquivEmbed.Torus.W",
+    "EquivEmbed.Torus.ef",
+    "EquivEmbed.Torus.fsum",
+    "EquivEmbed.Torus.pd"
   ],
   "permitted_axioms": [
     "propext",

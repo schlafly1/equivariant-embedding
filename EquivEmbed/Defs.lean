@@ -8,6 +8,8 @@ module
 public import Mathlib.Analysis.Normed.Operator.Bilinear
 public import Mathlib.Topology.MetricSpace.IsometricSMul
 public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+public import Mathlib.Topology.Algebra.InfiniteSum.Module
 
 /-!
 # Definitions for the conditional equivariant isometric embedding theorem
@@ -139,5 +141,39 @@ def ConeCondition (P : EmbeddingProblem G) : Prop :=
 /-- Hypothesis 4: Günther's analytic package exists at every free embedding. -/
 def HasGuntherPackages (P : EmbeddingProblem G) : Prop :=
   ∀ u : P.Map, P.IsEmbedding u → P.IsFree u → Nonempty (GuntherPackage P u)
+
+/-! ### The flat torus `ℝⁿ / 2π ℤⁿ`
+
+Definitions used in the statement of the unconditional theorem
+`flat_torus_equivariant_perturbation`.  Maps of the torus are given by absolutely convergent
+Fourier series. -/
+
+namespace Torus
+
+/-- The frequency lattice of the torus `ℝⁿ / 2π ℤⁿ`. -/
+abbrev Freq (n : ℕ) : Type := Fin n → ℤ
+
+/-- `|k|²`. -/
+def sq {n : ℕ} (k : Freq n) : ℝ := ∑ p, (k p : ℝ) ^ 2
+
+/-- The weight `1 + |k|²`.  A coefficient family `a` with `∑ W k * ‖a k‖ < ∞` is the Fourier
+series of a map of class `C²`. -/
+def W {n : ℕ} (k : Freq n) : ℝ := 1 + sq k
+
+/-- The character `x ↦ exp(i k·x)`. -/
+noncomputable def ef {n : ℕ} (k : Freq n) (x : Fin n → ℝ) : ℂ :=
+  Complex.exp (Complex.I * ∑ p, (k p : ℂ) * (x p : ℂ))
+
+/-- The Fourier series with coefficients `a`: the map `x ↦ ∑ₖ exp(i k·x) a k`. -/
+noncomputable def fsum {n : ℕ} {F : Type*} [NormedAddCommGroup F] [NormedSpace ℂ F]
+    (a : Freq n → F) (x : Fin n → ℝ) : F :=
+  ∑' k, ef k x • a k
+
+/-- The partial derivative in the `p`-th coordinate direction. -/
+noncomputable def pd {n : ℕ} {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (p : Fin n)
+    (f : (Fin n → ℝ) → E) (x : Fin n → ℝ) : E :=
+  fderiv ℝ f x (Pi.single p 1)
+
+end Torus
 
 end EquivEmbed

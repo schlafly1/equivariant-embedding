@@ -52,12 +52,22 @@ theorem with smoothing operators. We give a proof that replaces Nash--Moser by G
 which reduces the isometric embedding equation to a fixed point problem for a contraction on a
 Banach space of H\"older maps. All of G\"unther's operators commute with the group action, so the
 contraction preserves the closed subspace of equivariant maps, and the uniqueness of the small fixed
-point makes the correction equivariant without any averaging of nonlinear solutions. We also
+point makes the correction equivariant without any averaging of nonlinear solutions. Because the
+contraction loses no derivatives, the method also gives a result that the Nash--Moser proof does
+not: a $G$-invariant metric of class $C^{k,\alpha}$, $k\ge2$, $0<\alpha<1$, is induced by an
+equivariant embedding of the same class $C^{k,\alpha}$. The solution operator is a real-analytic
+local right inverse of the induced metric map that commutes with every symmetry of the starting
+embedding, and it follows that a compact family of invariant metrics is induced by a continuous
+family of equivariant embeddings for a single representation. We also
 formalize the algebraic and functional-analytic core of the argument in Lean~4 with Mathlib:
 the equivariant G\"unther fixed point theorem, the equivariance and coordinate independence of the
 Nash--G\"unther pointwise right inverse, the freeness of the Veronese map, the Haar-averaged inner
 product used in the approximation step, and the assembly of the main theorem from explicitly
-stated analytic inputs. The formal proofs use only the standard axioms of Lean.
+stated analytic inputs. Lean's library does not yet contain the analysis on manifolds that the
+general theorem needs. So we also formalize one case completely, with no analytic hypotheses:
+the equivariant perturbation theorem on a flat torus, where G\"unther's operators are explicit
+convolution operators on Fourier coefficients. The formal proofs use only the standard axioms of
+Lean.
 \end{abstract}
 
 \subjclass[2020]{53C42 (primary); 57S15, 58J05, 35J60, 68V20 (secondary)}
@@ -97,11 +107,14 @@ problem
 v = \cM(h) + \cB(v,v)
 \end{equation}
 in which $\cB$ loses no derivatives. The ordinary contraction mapping principle on a H\"older space
-then replaces the Nash--Moser iteration. Expositions are given by Yang~\cite{Yang98} and
-Tao~\cite{Tao16}; both note that G\"unther's reduction to a torus is a convenience and that one can
-work directly on $M$ with a background metric.
+then replaces the Nash--Moser iteration. Expositions are given by Yang~\cite{Yang98},
+Tao~\cite{Tao16} and Petrunin~\cite{Petrunin26}. These work on a torus, to which G\"unther reduces
+the general case by cutting the perturbation into pieces supported in charts; Yang and Tao note
+that this reduction is a convenience and that one can work directly on $M$ with a background
+metric. The reduction to a torus does not respect a group action, so for the equivariant problem
+the intrinsic formulation is needed. None of these expositions deals with equivariance.
 
-This paper does two things.
+This paper does four things.
 
 \begin{enumerate}[label=(\arabic*)]
 \item \emph{A proof of the Main Theorem by G\"unther's method}
@@ -112,25 +125,61 @@ $v\mapsto\cM(h)+\cB(v,v)$ commutes with the action of $G$ on maps $M\to\R^N$. It
 fixed point is therefore equivariant (Theorem~\ref{thm:abstract-gunther}). No smoothing operators
 are needed and no nonlinear solution is averaged. Step~2 is the same as in~\cite{MS80}.
 
+\item \emph{An extension to metrics of finite regularity} (Section~\ref{sec:finite}). The
+operators $\cM$ and $\cB$ lose no derivatives and satisfy a tame estimate, so a small solution is
+exactly as regular as the data. We obtain the following.
+
+\begin{theorem}\label{thm:finite-intro}
+Let $M$ be a compact smooth manifold, let $G$ be a compact Lie group acting smoothly on $M$, and
+let $\tilde g$ be a $G$-invariant Riemannian metric on $M$ of class $C^{k,\alpha}$, where $k\ge2$
+and $0<\alpha<1$. Then there are an orthogonal representation $\rho\colon G\to O(N)$ and an
+equivariant embedding $X\colon M\to\R^N$ of class $C^{k,\alpha}$ with
+$X^*\inner{\cdot}{\cdot}_{\R^N}=\tilde g$.
+\end{theorem}
+
+Without the group this is the theorem of Jacobowitz~\cite{Jacobowitz72}, in the same range of
+$k$ and $\alpha$. The Nash--Moser argument of~\cite{MS80} is carried out in the smooth category
+and loses derivatives.
+
+\item \emph{An equivariant right inverse, and families} (Section~\ref{sec:inverse-map}). The
+solution of~\eqref{eq:fixed-point-intro} is a convergent power series in $h$. So at a free
+equivariant embedding $u$ the map $F$ has a real-analytic local right inverse
+$h\mapsto\Psi(h)$, defined for all small $h$, invariant or not, which commutes with every symmetry
+of $u$ (Theorem~\ref{thm:right-inverse-map}). The embedding $\Psi(h)$ therefore inherits every
+symmetry shared by $u$ and $h$. As an application, a compact family of invariant metrics is
+induced by a continuous family of equivariant embeddings for one fixed representation
+(Theorem~\ref{thm:families}). In particular the dimension $N$ is bounded on compact sets of
+invariant metrics, although it is not bounded on the set of all invariant metrics.
+
 \item \emph{A machine-checked formalization} of the algebraic and functional-analytic core of
 this proof in Lean~4~\cite{Lean4} with Mathlib~\cite{Mathlib20} (Section~\ref{sec:lean}).
 Mathlib does not yet contain H\"older spaces of sections over manifolds, the Laplace--Beltrami
 operator, Schauder estimates or the Mostow--Palais theorem. We therefore prove the new
 equivariant ingredients unconditionally, and we prove the Main Theorem conditionally: the
 classical analytic inputs are explicit hypotheses, and none of them asserts the existence of an
-equivariant solution of the nonlinear problem.
+equivariant solution of the nonlinear problem. Because of these limitations of the library, we
+formalize one special case separately and completely (Section~\ref{sec:torus}): the equivariant
+perturbation theorem on a flat torus with a group of translations. There the analysis reduces to
+absolutely convergent Fourier series, and the Lean theorem has no analytic hypothesis.
 \end{enumerate}
 
-Equivariant versions of G\"unther's construction for cocompact discrete group actions on
-noncompact manifolds have been studied recently by Qiu~\cite{Qiu25}; see also
-Burago--Qiu~\cite{BuragoQiu25}. As in~\cite{MS80}, no bound on $N$ depending only on $\dim M$ is
+Qiu~\cite{Qiu25} has recently modified G\"unther's method to obtain equivariant isometric
+embeddings of a manifold diffeomorphic to $\R^n$ with a properly discontinuous cocompact group
+action, with the same bound on the dimension of the target as in G\"unther's theorem; see also
+Burago--Qiu~\cite{BuragoQiu25}. There the group is discrete and the manifold is noncompact. Here
+the group is a compact Lie group and the manifold is compact, the target carries an orthogonal
+representation, and the approximation step (Section~\ref{sec:approx}) is of a different nature. As in~\cite{MS80}, no bound on $N$ depending only on $\dim M$ is
 possible in the equivariant setting: \cite[\S6]{MS80} constructs left-invariant metrics on $S^3$
 that need arbitrarily large $N$.
 
 \subsection*{Conventions}
 All manifolds are smooth, compact and without boundary (see Remark~\ref{rem:boundary} for
 boundary), and $n=\dim M$. Repeated indices are summed and indices are raised with $g$. ``Smooth''
-means $C^\infty$. We fix $\alpha\in(0,1)$.
+means $C^\infty$. We fix $\alpha\in(0,1)$. In Sections~\ref{sec:setup}--\ref{sec:perturbation}
+the metric $g$ is used only as a smooth $G$-invariant background metric: it defines $\nabla$,
+$\Delta$ and the H\"older norms. Everything in those sections holds for every H\"older exponent
+in $(0,1)$ in place of $\alpha$, with constants depending on the exponent. This is used in
+Section~\ref{sec:finite}.
 
 \section{Setup}\label{sec:setup}
 
@@ -562,6 +611,478 @@ invariant metric on the sphere by an invariant partition of unity. We do not tre
 category, where~\cite[\S4]{MS80} uses the method of Greene and Jacobowitz.
 \end{remark}
 
+\section{Metrics of finite regularity}\label{sec:finite}
+
+The contraction argument loses no derivatives, so it applies to metrics that are not smooth. In
+this section $G$ acts smoothly on $M$, and $g$ is a fixed smooth $G$-invariant metric, used only as
+a background metric as in Sections~\ref{sec:setup}--\ref{sec:perturbation}. Such a metric exists:
+apply the Haar projection $\Pi$ of Section~\ref{sec:approx} to any smooth metric. The metric to be
+realized is called $\tilde g$. We write $\|v\|_{C^2}=\sum_{j\le2}\sup_M|\nabla^jv|$.
+
+Let $u\colon M\to V$ be a smooth free equivariant embedding and let $\cM$, $\cB$ be the operators
+of Section~\ref{sec:gunther}.
+
+\begin{lemma}[Tame estimate]\label{lem:tame}
+For every $k\ge2$ and $\gamma\in(0,1)$ there is a constant $C$ such that for all
+$v,w\in C^{k,\gamma}(M;V)$,
+\[
+\|\cB(v,w)\|_{k,\gamma}\le C\bigl(\|v\|_{C^2}\|w\|_{k,\gamma}+\|v\|_{k,\gamma}\|w\|_{C^2}\bigr).
+\]
+\end{lemma}
+
+\begin{proof}
+For tensor fields $f_1,f_2$ and $j\ge0$ there is the product inequality
+\begin{equation}\label{eq:tame-product}
+\|f_1\otimes f_2\|_{j,\gamma}\le C_j\bigl(\|f_1\|_{C^0}\|f_2\|_{j,\gamma}+\|f_1\|_{j,\gamma}\|f_2\|_{C^0}\bigr);
+\end{equation}
+see~\cite[Appendix~A]{Hormander76}. (For $j=0$ it is elementary. For $j\ge1$ it follows from the
+Leibniz rule and the interpolation inequalities for H\"older norms.) The tensors $\sigma(v,w)$ and
+$\tilde\tau(v,w)$ are sums of contractions, with the smooth tensors $g$ and $\Ric$, of products
+$\nabla^av\otimes\nabla^bw$ with $1\le a,b\le2$. Since $\|\nabla^av\|_{C^0}\le\|v\|_{C^2}$ and
+$\|\nabla^av\|_{k-2,\gamma}\le\|v\|_{k,\gamma}$ for $a\le2$, \eqref{eq:tame-product} with $j=k-2$
+gives
+\[
+\|\sigma(v,w)\|_{k-2,\gamma}+\|\tilde\tau(v,w)\|_{k-2,\gamma}
+\le C\bigl(\|v\|_{C^2}\|w\|_{k,\gamma}+\|v\|_{k,\gamma}\|w\|_{C^2}\bigr).
+\]
+By~\ref{E:schauder} and~\ref{E:bochner}, $\|\cS(v,w)\|_{k,\gamma}\le C\|\sigma(v,w)\|_{k-2,\gamma}$,
+$\|\cK(\cS(v,w))\|_{k-1,\gamma}\le C\|\cS(v,w)\|_{k,\gamma}$ and
+$\|\cT(v,w)\|_{k,\gamma}\le C\bigl(\|\tilde\tau(v,w)\|_{k-2,\gamma}+\|\cK(\cS(v,w))\|_{k-2,\gamma}\bigr)$.
+These maps are linear in $\sigma$ and $\tilde\tau$. Finally $L_u$ has smooth coefficients, so it is
+bounded on $C^{k,\gamma}$.
+\end{proof}
+
+\begin{lemma}[Regularity]\label{lem:finite-regularity}
+Let $k\ge2$ and $0<\beta\le\alpha<1$. There is $r>0$, depending on $u$, $k$, $\alpha$ and $\beta$,
+such that if $h\in C^{k,\alpha}(S^2T^*M)$, $v\in C^{2,\beta}(M;V)$, $\|v\|_{2,\beta}<r$ and
+$v=\cM(h)+\cB(v,v)$, then $v\in C^{k,\alpha}(M;V)$ and
+$\|v\|_{k,\alpha}\le2\|\cM(h)\|_{k,\alpha}$.
+\end{lemma}
+
+\begin{proof}
+Let $b$ be the norm of $\cB$ on $C^{2,\beta}(M;V)$ and let $C$ be the constant of
+Lemma~\ref{lem:tame} for $(k,\alpha)$. Choose $r>0$ with $8br\le1$ and $9Cr\le1$. Put
+$m=\cM(h)=v-\cB(v,v)$. Then $\|m\|_{2,\beta}\le r+br^2\le\tfrac98r$, so $4b\|m\|_{2,\beta}<1$. Also
+$\|v\|_{2,\beta}\le\|m\|_{2,\beta}+br\|v\|_{2,\beta}$, so $\|v\|_{2,\beta}\le2\|m\|_{2,\beta}$. By
+the proof of Theorem~\ref{thm:abstract-gunther}, $T(w)=m+\cB(w,w)$ is a contraction of the ball
+$\bar B=\{\|w\|_{2,\beta}\le2\|m\|_{2,\beta}\}$ in $C^{2,\beta}$, and $v$ is its unique fixed point
+in $\bar B$. Hence the iterates $v_0=0$, $v_{j+1}=T(v_j)$ lie in $\bar B$ and converge to $v$ in
+$C^{2,\beta}$. In particular $\|v_j\|_{C^2}\le2\|m\|_{2,\beta}\le\tfrac94r$ for all $j$.
+
+Since $L_u$ has smooth coefficients, $m\in C^{k,\alpha}$. By induction and Lemma~\ref{lem:tame},
+$v_j\in C^{k,\alpha}$ and
+\[
+\|v_{j+1}\|_{k,\alpha}\le\|m\|_{k,\alpha}+2C\|v_j\|_{C^2}\|v_j\|_{k,\alpha}
+\le\|m\|_{k,\alpha}+\tfrac12\|v_j\|_{k,\alpha}.
+\]
+So $\|v_j\|_{k,\alpha}\le2\|m\|_{k,\alpha}$ for all $j$. By the Arzel\`a--Ascoli theorem a
+subsequence of $(v_j)$ converges in $C^k$, and its limit is $v$. The H\"older quotients of
+$\nabla^kv_j$ converge pointwise to those of $\nabla^kv$, so $v\in C^{k,\alpha}$ and
+$\|v\|_{k,\alpha}\le2\|m\|_{k,\alpha}$.
+\end{proof}
+
+The smallness is required only in $C^{2,\beta}$; no smallness in $C^{k,\alpha}$ is needed. This is
+the point of the tame estimate.
+
+\begin{theorem}[Equivariant perturbation, finite regularity]\label{thm:finite-perturbation}
+Let $u\colon M\to V$ be a smooth free equivariant embedding, and let $k\ge2$ and
+$0<\beta\le\alpha<1$. There are $\varepsilon>0$ and $C$ such that for every $G$-invariant symmetric
+$2$-tensor $h$ of class $C^{k,\alpha}$ with $\|h\|_{2,\beta}<\varepsilon$ there is an equivariant
+embedding $X\colon M\to V$ of class $C^{k,\alpha}$ with $F(X)=F(u)+h$. Moreover $X=u+v$ with
+$\|v\|_{k,\alpha}\le C\|h\|_{k,\alpha}$.
+\end{theorem}
+
+\begin{proof}
+Repeat the proof of Theorem~\ref{thm:perturbation} with $E=C^{2,\beta}(M;V)$, and with $r$ taken
+from Lemma~\ref{lem:finite-regularity} instead of~\ref{F:regularity}.
+Theorem~\ref{thm:abstract-gunther} gives a $G$-fixed $v\in C^{2,\beta}$ with $v=\cM(h)+\cB(v,v)$
+and $\|v\|_{2,\beta}<\min(\delta,r)$. By Lemma~\ref{lem:finite-regularity}, $v\in C^{k,\alpha}$
+and $\|v\|_{k,\alpha}\le2\|\cM(h)\|_{k,\alpha}\le C\|h\|_{k,\alpha}$. The map $X=u+v$ is an
+equivariant embedding by~\ref{F:open}, and $F(X)=F(u)+h$ by
+Proposition~\ref{prop:gunther-package}\ref{pkg:identity}, which holds in $C^{2,\beta}$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:finite-intro}]
+Fix $\beta\in(0,\alpha)$. The free equivariant embedding $u_0$ of
+Proposition~\ref{prop:veronese} is smooth, because the theorem of Mostow and Palais needs only
+the smooth action. Since $\tilde g$ is continuous and $M$ is compact, there is $c>0$ with
+$g''=\tilde g-cF(u_0)$ positive definite. The tensor $g''$ is $G$-invariant and of class
+$C^{k,\alpha}$. Let $u_1=\sqrt c\,u_0$ and let $\varepsilon$ be given by
+Theorem~\ref{thm:finite-perturbation} for $u_1$.
+
+Smooth tensors are dense in $C^{2,\alpha}$ for the $C^{2,\beta}$ norm. So there is a smooth
+symmetric $2$-tensor $s$ with $\|g''-s\|_{2,\beta}<\varepsilon/2$. The tensor $\Pi s$ is smooth
+and $G$-invariant, and since $\Pi g''=g''$ and $\Pi$ does not increase the norm,
+\[
+\|g''-\Pi s\|_{2,\beta}=\|\Pi(g''-s)\|_{2,\beta}<\varepsilon/2 .
+\]
+Taking $s$ closer to $g''$ if necessary, $\Pi s$ is positive definite. By
+Proposition~\ref{prop:approx} there is a smooth equivariant map $X_2$ with
+$\|\Pi s-F(X_2)\|_{2,\beta}<\varepsilon/2$. Then
+\[
+h:=\tilde g-cF(u_0)-F(X_2)
+\]
+is $G$-invariant, of class $C^{k,\alpha}$, and $\|h\|_{2,\beta}<\varepsilon$.
+Theorem~\ref{thm:finite-perturbation} gives an equivariant embedding $X_1$ of class $C^{k,\alpha}$
+with $F(X_1)=F(u_1)+h=\tilde g-F(X_2)$. Then $X=(X_1,X_2)$ is an equivariant embedding of class
+$C^{k,\alpha}$ and $F(X)=\tilde g$.
+\end{proof}
+
+\begin{remark}\label{rem:finite}
+(a) The exponent $\beta<\alpha$ is needed because smooth tensors are not dense in $C^{k,\alpha}$
+for its own norm. The solution is found in $C^{2,\beta}$ and Lemma~\ref{lem:finite-regularity}
+returns it to $C^{k,\alpha}$, so no H\"older exponent is lost.
+
+(b) The radius $r$ of Lemma~\ref{lem:finite-regularity} depends on $k$. For a smooth metric the
+argument of this section therefore gives, for each $k$, an equivariant isometric embedding of
+class $C^{k,\alpha}$. The smooth case needs the stronger statement~\ref{F:regularity}, in which
+the radius does not depend on $k$.
+
+(c) The representation $\rho$ and the dimension $N$ depend on $\tilde g$, as in the smooth case.
+\end{remark}
+
+\section{The equivariant right inverse, symmetry and families}\label{sec:inverse-map}
+
+Theorem~\ref{thm:abstract-gunther} gives more than a $G$-fixed solution. The solution depends
+analytically on the data and the solution map commutes with the group.
+
+\begin{proposition}[Lean: \lean{gunther_solution_map_equivariant},
+\lean{gunther_solution_map_lipschitz}]\label{prop:series}
+Let $E$ be a real Banach space, let $\cB\colon E\times E\to E$ be bounded bilinear and let
+$b=\|\cB\|$. For $m\in E$ with $4b\|m\|<1$ let $v(m)$ be the unique solution of $v=m+\cB(v,v)$
+with $\|v\|\le2\|m\|$.
+\begin{enumerate}[label=(\alph*)]
+\item\label{ser:series} Put $v_1(m)=m$ and $v_n(m)=\sum_{i+j=n}\cB(v_i(m),v_j(m))$ for $n\ge2$.
+Then $v_n$ is a bounded homogeneous polynomial of degree $n$, and
+$v(m)=\sum_{n\ge1}v_n(m)$ with absolute convergence. So $m\mapsto v(m)$ is real-analytic on the
+ball $4b\|m\|<1$.
+\item\label{ser:lipschitz} $\bigl(1-2b(\|m\|+\|m'\|)\bigr)\,\|v(m)-v(m')\|\le\|m-m'\|$.
+\item\label{ser:equivariant} If a monoid $G$ acts on $E$ by linear isometries and $\cB$ is
+$G$-equivariant, then $v(\sigma\cdot m)=\sigma\cdot v(m)$ for all $\sigma\in G$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\ref{ser:series} Let $c_1=1$ and $c_n=\sum_{i+j=n}c_ic_j$; these are the Catalan numbers, and
+$\sum_nc_nt^n=\tfrac12\bigl(1-\sqrt{1-4t}\bigr)$ for $|t|\le\tfrac14$. By induction
+$\|v_n(m)\|\le c_nb^{n-1}\|m\|^n$. So for $b>0$,
+\[
+\sum_n\|v_n(m)\|\le\frac{1-\sqrt{1-4b\|m\|}}{2b}\le2\|m\|,
+\]
+and the case $b=0$ is trivial. Let $w=\sum_nv_n(m)$. Since the series converges absolutely,
+$\cB(w,w)=\sum_{n\ge2}\sum_{i+j=n}\cB(v_i(m),v_j(m))=w-m$. So $w$ is a solution with
+$\|w\|\le2\|m\|$, and $w=v(m)$ by uniqueness.
+
+\ref{ser:lipschitz} Write $v=v(m)$, $v'=v(m')$. Then
+$v-v'=m-m'+\cB(v,v-v')+\cB(v-v',v')$ and $\|v\|+\|v'\|\le2(\|m\|+\|m'\|)$.
+
+\ref{ser:equivariant} The point $\sigma\cdot v(m)$ solves the equation for $\sigma\cdot m$, and
+$\|\sigma\cdot v(m)\|\le2\|\sigma\cdot m\|$. Use uniqueness.
+\end{proof}
+
+Now let $u\colon M\to V$ be a smooth free equivariant embedding. Let $\Gamma_u$ be the group of
+all pairs $\gamma=(\varphi,R)$, where $\varphi$ is an isometry of the background metric $g$,
+$R\in O(V)$, and $R\circ u\circ\varphi^{-1}=u$. It acts on maps and on tensors by
+\[
+\gamma\cdot v=R\circ v\circ\varphi^{-1},\qquad\gamma\cdot h=(\varphi^{-1})^*h ,
+\]
+and these actions are linear and isometric for the H\"older norms, by the proof of
+Lemma~\ref{lem:isometric-action}. The group $G$ maps to $\Gamma_u$ by
+$\sigma\mapsto(\sigma,\rho(\sigma))$, and~\eqref{eq:action} is the induced action. The group
+$\Gamma_u$ can be larger than the image of $G$.
+
+\begin{theorem}[Equivariant analytic right inverse]\label{thm:right-inverse-map}
+Let $u\colon M\to V$ be a smooth free equivariant embedding. There are $\varepsilon>0$ and a
+real-analytic map
+\[
+\Psi\colon U=\bigl\{h\in C^{2,\alpha}(S^2T^*M):\|h\|_{2,\alpha}<\varepsilon\bigr\}\to C^{2,\alpha}(M;V)
+\]
+with the following properties.
+\begin{enumerate}[label=(\alph*)]
+\item\label{ri:inverse} $\Psi(0)=u$, and for every $h\in U$ the map $\Psi(h)$ is an embedding
+with $F(\Psi(h))=F(u)+h$. The derivative of $\Psi$ at $0$ is $\cM$.
+\item\label{ri:equivariant} $\Psi(\gamma\cdot h)=\gamma\cdot\Psi(h)$ for all $\gamma\in\Gamma_u$
+and $h\in U$. In particular $\Psi(\sigma\cdot h)=\sigma\cdot\Psi(h)$ for $\sigma\in G$.
+\item\label{ri:lipschitz} $\|\Psi(h)-\Psi(h')\|_{2,\alpha}\le C\|h-h'\|_{2,\alpha}$.
+\item\label{ri:regular} If $h\in U$ is smooth then $\Psi(h)$ is smooth. For every $k\ge2$ there is
+$\varepsilon_k>0$ such that $\Psi(h)\in C^{k,\alpha}$ if $h\in C^{k,\alpha}$ and
+$\|h\|_{2,\alpha}<\varepsilon_k$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Let $\eta$ and $\varepsilon$ be as in the proof of Theorem~\ref{thm:perturbation}, and put
+$\Psi(h)=u+v(\cM(h))$ in the notation of Proposition~\ref{prop:series}. Then $\Psi$ is analytic,
+since $\cM$ is bounded linear and $\|\cM(h)\|<\eta$ implies $4\|\cB\|\|\cM(h)\|<1$.
+Part~\ref{ri:inverse} is proved as in Theorem~\ref{thm:perturbation}, which did not use the
+invariance of $h$ for this. Part~\ref{ri:lipschitz} follows from
+Proposition~\ref{prop:series}\ref{ser:lipschitz}, since
+$1-4\|\cB\|\eta\ge(4\|\cB\|+1)^{-1}$. Part~\ref{ri:regular} is~\ref{F:regularity} and
+Lemma~\ref{lem:finite-regularity}.
+
+For~\ref{ri:equivariant} let $\gamma=(\varphi,R)\in\Gamma_u$. The proof of
+Corollary~\ref{cor:L-equivariant} uses only that $\varphi$ is an isometry and that
+$u\circ\varphi=R\circ u$ with $R$ orthogonal. It gives
+$L_u(\varphi x)\,Qb=R\,L_u(x)\,b$ for \emph{every} $b$, where
+$Q=d\varphi_x\oplus S^2d\varphi_x$. Hence $\cM(\gamma\cdot h)=\gamma\cdot\cM(h)$ for every $h$.
+The proof of Proposition~\ref{prop:gunther-package}\ref{pkg:equivariant} likewise gives
+$\cB(\gamma\cdot v,\gamma\cdot w)=\gamma\cdot\cB(v,w)$. Now apply
+Proposition~\ref{prop:series}\ref{ser:equivariant} to the group $\Gamma_u$, and use
+$\gamma\cdot u=u$.
+\end{proof}
+
+\begin{corollary}[Inheritance of symmetry]\label{cor:inherit}
+Let $h\in U$ and let $X=\Psi(h)$. Then $X\circ\varphi=R\circ X$ for every
+$(\varphi,R)\in\Gamma_u$ with $\varphi^*h=h$. In particular:
+\begin{enumerate}[label=(\alph*)]
+\item The embedding $X$ of Theorem~\ref{thm:perturbation} does not depend on the group $G$. If
+$u$ is equivariant and $h$ is invariant for a larger group $G'\supset G$ of isometries of $g$,
+with a representation extending $\rho$, then $X$ is equivariant for $G'$.
+\item $X$ takes its values in the linear span of $u(M)$.
+\end{enumerate}
+\end{corollary}
+
+\begin{proof}
+The first statement is Theorem~\ref{thm:right-inverse-map}\ref{ri:equivariant}. For~(b) take
+$\varphi=\mathrm{id}$ and let $R$ be the reflection in the span of $u(M)$.
+\end{proof}
+
+\begin{remark}
+The uniqueness behind these statements is the uniqueness of the small solution of the
+system~\eqref{eq:system}. The equation $F(X)=F(u)+h$ itself has many other solutions near $u$.
+The system~\eqref{eq:system} selects one of them in a way that is natural under isometries.
+This is what an averaging argument cannot do.
+\end{remark}
+
+The right inverse gives a version of the Main Theorem for families.
+
+\begin{theorem}[Families]\label{thm:families}
+Let $K$ be a compact Hausdorff space and let $t\mapsto g_t$ be a continuous map from $K$ to
+$C^{2,\alpha}(S^2T^*M)$ whose values are smooth $G$-invariant Riemannian metrics. Then there are
+one orthogonal representation $\rho\colon G\to O(N)$ and smooth embeddings $X_t\colon M\to\R^N$,
+equivariant for $\rho$, such that $F(X_t)=g_t$ for all $t\in K$ and $t\mapsto X_t$ is continuous
+from $K$ to $C^{2,\alpha}(M;\R^N)$. If $K$ is a compact manifold and $t\mapsto g_t$ is of class
+$C^j$, then $t\mapsto X_t$ can be taken of class $C^j$.
+\end{theorem}
+
+\begin{proof}
+Let $u_0$ be the free equivariant embedding of Proposition~\ref{prop:veronese}. Since $K$ is
+compact there is $c>0$ with $g_t-cF(u_0)$ positive definite for all $t$. Let $u_1=\sqrt c\,u_0$
+and let $\Psi$ and $\varepsilon$ be given by Theorem~\ref{thm:right-inverse-map} for $u_1$. For
+each $t_0\in K$, Proposition~\ref{prop:approx} gives a smooth equivariant map $Y$ with
+$\|g_{t_0}-cF(u_0)-F(Y)\|_{2,\alpha}<\varepsilon$, and this inequality holds for all $t$ in a
+neighborhood of $t_0$. So there are an open cover $U_1,\dots,U_q$ of $K$ and smooth equivariant
+maps $Y^1,\dots,Y^q$ with
+\[
+\|g_t-cF(u_0)-F(Y^i)\|_{2,\alpha}<\varepsilon\qquad\text{for }t\in U_i .
+\]
+Choose continuous functions $\psi_i\ge0$ on $K$ with support in $U_i$ and $\sum_i\psi_i^2=1$.
+The map $Y_t=(\psi_1(t)Y^1,\dots,\psi_q(t)Y^q)$ is smooth and equivariant for the direct sum of
+the representations, and $F(Y_t)=\sum_i\psi_i(t)^2F(Y^i)$ by~\eqref{eq:F-additive}. Hence
+\[
+h_t:=g_t-cF(u_0)-F(Y_t)=\sum_i\psi_i(t)^2\bigl(g_t-cF(u_0)-F(Y^i)\bigr)
+\]
+is smooth, $G$-invariant, and $\|h_t\|_{2,\alpha}<\varepsilon$. Put $X_t=(\Psi(h_t),Y_t)$. Then
+$F(X_t)=cF(u_0)+h_t+F(Y_t)=g_t$, and $X_t$ is a smooth equivariant embedding by
+Theorem~\ref{thm:right-inverse-map}. The map $t\mapsto h_t$ is continuous into $C^{2,\alpha}$ and
+$\Psi$ is continuous, so $t\mapsto X_t$ is continuous. In the $C^j$ case take the $\psi_i$ smooth;
+then $t\mapsto h_t$ is $C^j$ and $\Psi$ is analytic.
+\end{proof}
+
+\begin{corollary}\label{cor:uniform-N}
+Let $\mathcal C$ be a set of smooth $G$-invariant Riemannian metrics on $M$ that is compact in the
+$C^{2,\alpha}$ topology. Then there is one orthogonal representation $\rho\colon G\to O(N)$ such
+that every metric in $\mathcal C$ is induced by an embedding equivariant for $\rho$.
+\end{corollary}
+
+By~\cite[\S6]{MS80} no single $N$ works for all left-invariant metrics on $S^3$. So the
+compactness assumption cannot be dropped.
+
+\begin{remark}[Questions]\label{rem:questions}
+(a) \emph{Real-analytic metrics.} If the small solution $v$ is real-analytic whenever $h$ and $u$
+are, the method would also give the real-analytic case of~\cite[\S4]{MS80}. We have not
+examined this.
+
+(b) \emph{Noncompact groups.} The perturbation step uses only that $G$ acts isometrically on
+the H\"older spaces and that $u$ is free with uniform bounds. It should extend to proper
+cocompact isometric actions, with equivariance for a representation by Euclidean motions, as
+in~\cite{Qiu25} for discrete groups. The approximation step is the difficulty.
+
+(c) \emph{Dimension.} Corollary~\ref{cor:uniform-N} shows that $N$ is locally bounded on the
+space of invariant metrics. It would be interesting to bound $N$ by the dimension of $M$ and
+representation-theoretic data of the action and of the metric.
+\end{remark}
+
+\section{The flat torus: a case formalized without analytic hypotheses}\label{sec:torus}
+
+The general theorem cannot at present be formalized completely in Lean, because Mathlib has no
+H\"older spaces of sections, no Laplace--Beltrami operator and no Schauder estimates. This section
+describes a special case that is formalized separately and completely, for that reason only: it
+is not a new result, but a case of the equivariant perturbation theorem in which the whole
+argument, including the analysis, is checked by Lean.
+
+The case is the torus $\mathbb T^n=\R^n/2\pi\mathbb Z^n$ with the flat background metric, and
+symmetries that are translations of $\mathbb T^n$ combined with orthogonal maps of the target.
+The metrics that are realized are not flat: only the background metric is.
+
+\subsection{The Wiener algebra}
+Let $V$ be a complex Banach space with a symmetric bilinear form $\inner{\cdot}{\cdot}$; the case
+of interest is $V=\mathbb C^N$ with $\inner zw=\sum_az_aw_a$. For a family $a=(a_k)_{k\in\mathbb Z^n}$
+in $V$ let
+\[
+f_a(x)=\sum_{k\in\mathbb Z^n}e^{ik\cdot x}a_k,\qquad
+\|a\|_A=\sum_k W(k)\,|a_k|,\qquad W(k)=1+|k|^2 .
+\]
+Let $A$ be the Banach space of families with $\|a\|_A<\infty$. Its elements are maps of class
+$C^2$, and every smooth map belongs to it. We use three elementary facts.
+\begin{enumerate}[label=(W\arabic*)]
+\item $\partial_pf_a=f_b$ with $b_k=ik_pa_k$ (termwise differentiation).
+\item $(\Delta-1)^{-1}$ multiplies the $k$-th coefficient by $-1/(1+|k|^2)$.
+\item The coefficients of a product are the convolution of the coefficients.
+\end{enumerate}
+So every operator of Section~\ref{sec:gunther} is a \emph{kernel convolution}
+\[
+(a,b)\longmapsto\Bigl(\sum_{l+m=k}\kappa(l,m)\,\beta(a_l,b_m)\Bigr)_k ,
+\]
+where $\beta$ is a bounded bilinear map and $\kappa$ a scalar kernel.
+
+\begin{lemma}[Weighted Young inequality; Lean: \lean{Torus.wconv}]\label{lem:young}
+If $|\kappa(l,m)|\,W(l+m)\le C\,W(l)\,W(m)$ for all $l,m$, then the kernel convolution is a bounded
+bilinear map $A\times A\to A$ of norm at most $C\|\beta\|$.
+\end{lemma}
+
+For $\kappa=1$ the hypothesis holds with $C=2$, since $W(l+m)\le2W(l)W(m)$. So $A$ is closed under
+products.
+
+\subsection{G\"unther's operators}
+On the flat torus $\Ric=0$ and $\cK=0$, and the operators of~\eqref{eq:S-T}, in the form that is
+not symmetrized in $(v,w)$, are
+\[
+\cS_j(v,w)=(\Delta-1)^{-1}\inner{\Delta v}{\partial_jw},\qquad
+\cT_{ij}(v,w)=(\Delta-1)^{-1}\bigl(-2\inner{\Delta v}{\partial_i\partial_jw}
++2\inner{\partial_i\partial_pv}{\partial_j\partial_pw}-\inner{\partial_iv}{\partial_jw}\bigr).
+\]
+By (W1)--(W3) they are kernel convolutions with $\beta=\inner{\cdot}{\cdot}$ and the kernels
+\[
+\kappa^S_j(l,m)=\frac{i\,|l|^2m_j}{1+|l+m|^2},\qquad
+\kappa^T_{ij}(l,m)=-\frac{-2|l|^2m_im_j+2\,l_im_j\,(l\cdot m)+l_im_j}{1+|l+m|^2}.
+\]
+
+\begin{lemma}[Lean: \lean{Torus.norm_kS_le}, \lean{Torus.norm_kT_le}]\label{lem:kernels}
+$|\kappa^S_j(l,m)|\,W(l+m)\le W(l)W(m)$ and $|\kappa^T_{ij}(l,m)|\,W(l+m)\le(2n+3)\,W(l)W(m)$.
+\end{lemma}
+
+\begin{proof}
+The factor $W(l+m)$ cancels the denominator. For integer vectors $|m_j|\le m_j^2\le|m|^2$ and
+$|l_il_p|\le|l|^2$, so each term of the numerators is at most a constant times $|l|^2|m|^2$.
+\end{proof}
+
+So $\cS_j$ and $\cT_{ij}$ are bounded bilinear maps $A\times A\to A$. The gain of two derivatives,
+which in general is the Schauder estimate~\ref{E:schauder}, is here the factor $1/(1+|l+m|^2)$.
+
+\begin{lemma}[G\"unther's identity on coefficients; Lean: \lean{Torus.gunther_coeff}]
+\label{lem:gunther-coeff}
+For $v\in A$, the families of coefficients of $\inner{\partial_iv}{\partial_jv}$ and of
+$\partial_i\cS_j(v,v)+\partial_j\cS_i(v,v)+\cT_{ij}(v,v)$ are equal.
+\end{lemma}
+
+\begin{proof}
+Let $a$ be the coefficients of $v$. The difference of the two $k$-th coefficients is
+\[
+\frac1{1+|k|^2}\sum_{l+m=k}\bigl(|l|^2\,l_jm_i-|m|^2\,l_im_j\bigr)\inner{a_l}{a_m}.
+\]
+This is a polynomial identity in $l$ and $m$. The summand changes sign under the exchange
+$l\leftrightarrow m$, because $\inner{\cdot}{\cdot}$ is symmetric, and the exchange is a
+bijection of $\{(l,m):l+m=k\}$. So the sum is zero.
+\end{proof}
+
+The proof needs no approximation by smooth maps, unlike that of Lemma~\ref{lem:gunther-identity}:
+every sum converges absolutely for $v\in A$.
+
+\subsection{The theorem}
+Let $u\in A$. A \emph{dual frame} for $u$ consists of $\ell^1_p,\ell^2_{pq}\in A$ with
+\begin{equation}\label{eq:dual-frame}
+\inner{\partial_pu}{\ell^1_q}=\delta_{pq},\quad
+\inner{\partial_pu}{\ell^2_{qr}}=0,\quad
+\inner{\partial_p\partial_qu}{\ell^1_r}=0,\quad
+\inner{\partial_p\partial_qu}{\ell^2_{rs}}=\tfrac12(\delta_{pr}\delta_{qs}+\delta_{ps}\delta_{qr}).
+\end{equation}
+At each point such vectors exist if and only if $u$ is free there, and for a smooth free map
+the columns of the right inverse $L_u$ of Section~\ref{sec:right-inverse} form a dual frame in
+$A$. With a dual frame,
+\[
+\cM(h)=-\tfrac12\sum_{i,j}h_{ij}\,\ell^2_{ij},\qquad
+\cB(v,w)=-\sum_j\cS_j(v,w)\,\ell^1_j+\tfrac12\sum_{i,j}\cT_{ij}(v,w)\,\ell^2_{ij},
+\]
+and $\cB\colon A\times A\to A$ is bounded bilinear by Lemmas~\ref{lem:young} and~\ref{lem:kernels}.
+
+Symmetries act on coefficients. If $t\in\R^n$ and $R$ is a linear isometry of $V$ preserving
+$\inner{\cdot}{\cdot}$, then $f_a(x+t)=Rf_a(x)$ for all $x$ if $e^{-ik\cdot t}Ra_k=a_k$ for all
+$k$. For $V=\mathbb C^N$ let $c$ be the coordinatewise complex conjugation. Then $f_a$ takes its
+values in $\R^N$ if $c(a_{-k})=a_k$ for all $k$, and on $\R^N$ the form $\inner{\cdot}{\cdot}$ is
+the Euclidean inner product.
+
+\begin{theorem}[Lean: \lean{flat_torus_equivariant_perturbation}]\label{thm:torus}
+Let $u\in A$ have a dual frame $(\ell^1,\ell^2)$. There are $\varepsilon>0$ and $C$ such that for
+every symmetric family $h=(h_{ij})$ of scalar elements of $A$ with $\|h_{ij}\|_A<\varepsilon$ there
+is $v\in A$ with the following properties.
+\begin{enumerate}[label=(\alph*)]
+\item $\inner{\partial_i(u+v)}{\partial_j(u+v)}=\inner{\partial_iu}{\partial_ju}+h_{ij}$ at every
+point of the torus.
+\item $\|v\|_A\le C\max_{i,j}\|h_{ij}\|_A$.
+\item If $u$, $\ell^1_j$ and $\ell^2_{ij}$ are $(t,R)$-equivariant and the $h_{ij}$ are invariant
+under the translation by $t$, then $(u+v)(x+t)=R\,(u+v)(x)$ for all $x$.
+\item If $u$, $\ell^1_j$, $\ell^2_{ij}$ and $h_{ij}$ are real, then $u+v$ is real.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+By Theorem~\ref{thm:abstract-gunther} there is a unique small $v\in A$ with
+$v=\cM(h)+\cB(v,v)$. Contracting this equation with $\partial_pu$ and with
+$\partial_p\partial_qu$ and using~\eqref{eq:dual-frame} gives the system~\eqref{eq:system}, and
+then~(a) follows from Lemma~\ref{lem:gunther-coeff} as in Section~\ref{sec:gunther}. Part~(b) is
+the bound $\|v\|\le2\|\cM(h)\|$. For~(c), the map $a\mapsto(e^{-ik\cdot t}Ra_k)_k$ is a linear
+isometry of $A$ that commutes with $\cB$ and fixes $\cM(h)$; apply uniqueness, as in
+Theorem~\ref{thm:abstract-gunther}. Part~(d) is the same argument for the map
+$a\mapsto(c(a_{-k}))_k$, which is a real linear isometry of $A$.
+\end{proof}
+
+Part~(c) holds for all pairs $(t,R)$ at once, with the same $\varepsilon$ and the same $v$. So it
+contains the equivariance for every group $G$ of such pairs, and it is the statement of
+Corollary~\ref{cor:inherit} in this case. Part~(d) shows that complex conjugation can be treated
+as one more symmetry: the reality of the solution also comes from the uniqueness of the fixed
+point.
+
+\begin{remark}\label{rem:torus}
+(a) \emph{Examples.} For $n=1$ the map $u(x)=(\cos x,\sin x)$ has the dual frame $\ell^1=u'$,
+$\ell^2=u''$. This example is checked in Lean (\lean{Torus.Example.circle_dual_frame}, in the
+basis of $\mathbb C^2$ in which $u=(e^{ix},e^{-ix})$), so the hypotheses of the Lean theorem are
+satisfiable, and \lean{Torus.Example.circle_perturbation} is the resulting statement for
+perturbations of the unit circle. For any $n$, let $e(x)=(\cos x_p,\sin x_p)_p$ and $u=(e,e\odot e)$ as in
+Section~\ref{sec:veronese}. Then $u$ is free and equivariant for the whole group of translations,
+so $L_u(x)=\rho(x)L_u(0)$ and the dual frame consists of trigonometric polynomials. If $G$ is a
+closed subgroup of the group of translations, the $G$-invariant tensors $h$ are those whose
+coefficients $h_{ij}$ are constant along the orbits of $G$; they are not flat in general.
+
+(b) \emph{What Lean assumes.} The Lean theorem takes the coefficient families $u$, $\ell^1$,
+$\ell^2$, $h$ with finite $A$-norm and the pointwise identities~\eqref{eq:dual-frame} as
+hypotheses, with the derivatives in~\eqref{eq:dual-frame} and in~(a) being Fr\'echet derivatives
+of the functions $f_a$. The symmetry hypotheses of~(c) and~(d) are stated on coefficients. There
+is no other hypothesis: the function spaces, the operators, their bounds, G\"unther's identity,
+termwise differentiation and the fixed point are all constructed or proved in Lean.
+
+(c) \emph{What is not formalized here.} The construction of a dual frame from freeness (it needs
+$L_u\in A$, which follows from smoothness or from Wiener's lemma), an explicit example for
+$n\ge2$, the fact
+that $u+v$ is an embedding when $u$ is one and $h$ is small (it follows from~(b), since
+$\|v\|_{C^1}\le C'\|v\|_A$), and the approximation step of Section~\ref{sec:approx}. So Lean
+proves the perturbation theorem on the flat torus, not the full embedding theorem.
+
+(d) \emph{Function spaces.} The space $A$ replaces $C^{2,\alpha}$. It is a Banach algebra of
+$C^2$ maps on which $(\Delta-1)^{-1}$ gains two derivatives for trivial reasons. On a general
+manifold there is no such space, and the H\"older spaces and Schauder estimates are needed.
+\end{remark}
+
 \section{The Lean formalization}\label{sec:lean}
 
 The formalization is available at\\ \repourl.\\ It uses Lean~4 (toolchain \texttt{v4.35.0}) and
@@ -580,10 +1101,13 @@ Mathlib (tag \texttt{v4.35.0}), and follows the layout of the Palomar registry: 
 Lean declaration & Mathematical content & Here\\
 \midrule
 \lean{gunther_fixed_point_equivariant} & equivariant G\"unther fixed point & Thm.~\ref{thm:abstract-gunther}\\
+\lean{gunther_solution_map_equivariant} & the solution map commutes with $G$ & Prop.~\ref{prop:series}\ref{ser:equivariant}\\
+\lean{gunther_solution_map_lipschitz} & Lipschitz dependence on the data & Prop.~\ref{prop:series}\ref{ser:lipschitz}\\
 \lean{nash_gunther_right_inverse} & pointwise right inverse, least norm & Prop.~\ref{prop:right-inverse}\\
 \lean{nash_gunther_right_inverse_equivariant} & equivariance, coordinates & Prop.~\ref{prop:right-inverse-eq}\\
 \lean{veronese_map_free} & freeness of $(e,e\odot e)$ & Prop.~\ref{prop:veronese}\\
 \lean{haar_averaged_inner_product} & averaged invariant inner product & Prop.~\ref{prop:avg-ip}\\
+\lean{flat_torus_equivariant_perturbation} & perturbation theorem on a flat torus & Thm.~\ref{thm:torus}\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -635,12 +1159,44 @@ openness of embeddings. These are non-equivariant analytic facts together with t
 the operators; the existence of an equivariant solution is not assumed. It is produced in Lean by
 Theorem~\ref{thm:abstract-gunther}, through \lean{equivariant_gunther_perturbation}.
 
+\subsection{The flat torus}
+The theorem \lean{flat_torus_equivariant_perturbation} is Theorem~\ref{thm:torus}. It is stated for
+an arbitrary complex Banach space $F$ with a symmetric continuous bilinear form, and uses six
+definitions: the lattice \lean{Torus.Freq}, the weight \lean{Torus.W}, the characters
+\lean{Torus.ef}, the Fourier series \lean{Torus.fsum} (a \texttt{tsum}) and the partial derivative
+\lean{Torus.pd} (Mathlib's \texttt{fderiv} applied to a basis vector). Its proof is about 1700
+lines, in the directory \texttt{EquivEmbed/Torus/}:
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+File & Content\\
+\midrule
+\texttt{Conv.lean} & kernel convolutions on $\ell^1$ of a commutative group; Lemma~\ref{lem:young}\\
+\texttt{Kernels.lean} & the kernels $\kappa^S$, $\kappa^T$ and Lemma~\ref{lem:kernels}\\
+\texttt{Operators.lean} & $\cS$, $\cT$, $\cB$, $\cM$; Lemma~\ref{lem:gunther-coeff}; symmetries of $\cB$\\
+\texttt{Fourier.lean} & (W1) and (W3) for the functions $f_a$; symmetries and reality of $f_a$\\
+\texttt{Main.lean} & the fixed point, the metric equation, Theorem~\ref{thm:torus}\\
+\texttt{Example.lean} & the circle: the hypotheses hold (not among the advertised statements)\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The weighted space $A$ is realized as Mathlib's $\ell^1$ space \texttt{lp} of the families
+$(W(k)a_k)_k$, which gives completeness without further work. Unlike the conditional main theorem,
+this theorem refers to actual maps and their derivatives, and it has no analytic hypothesis; see
+Remark~\ref{rem:torus} for exactly what it assumes and what it does not prove.
+
 \subsection{What is not formalized}
 The objects of differential geometry (manifolds, H\"older spaces of sections, the Laplacian,
 Schauder estimates, eigenfunction expansions, the Mostow--Palais theorem, the openness of
 embeddings) are not formalized; they enter only through the hypotheses above. The link between the
 abstract structure and an actual compact Riemannian $G$-manifold is therefore given by the paper,
-not by Lean. Formalizing it would need substantial new Mathlib infrastructure, in particular
+not by Lean. The finite regularity results of Section~\ref{sec:finite} and the
+geometric statements of Section~\ref{sec:inverse-map} are not formalized in general either; they
+use the same abstract fixed point theorem. On the flat torus the perturbation theorem and the
+inheritance of symmetry are formalized (Section~\ref{sec:torus}). The power series of
+Proposition~\ref{prop:series}\ref{ser:series} is not formalized. Formalizing the geometry would need substantial new Mathlib infrastructure, in particular
 elliptic regularity on compact manifolds.
 
 \subsection{Checking}
@@ -682,6 +1238,14 @@ Congress of Mathematicians (Kyoto, 1990), Vol.~II, Math. Soc. Japan, Tokyo, 1991
 M.~W.~Hirsch, \emph{Differential Topology}, Graduate Texts in Mathematics \textbf{33}, Springer,
 New York, 1976.
 
+\bibitem{Hormander76}
+L.~H\"ormander, \emph{The boundary problems of physical geodesy}, Arch. Rational Mech. Anal.
+\textbf{62} (1976), 1--52.
+
+\bibitem{Jacobowitz72}
+H.~Jacobowitz, \emph{Implicit function theorems and isometric embeddings}, Ann. of Math.
+\textbf{95} (1972), 191--225.
+
 \bibitem{Lean4}
 L.~de~Moura and S.~Ullrich, \emph{The Lean 4 theorem prover and programming language}, in:
 Automated Deduction -- CADE 28, Lecture Notes in Computer Science \textbf{12699}, Springer, 2021,
@@ -710,6 +1274,9 @@ J.~Nash, \emph{The imbedding problem for Riemannian manifolds}, Ann. of Math. \t
 \bibitem{Palais57}
 R.~S.~Palais, \emph{Imbedding of compact, differentiable transformation groups in orthogonal
 representations}, J. Math. Mech. \textbf{6} (1957), 673--678.
+
+\bibitem{Petrunin26}
+A.~Petrunin, \emph{Nash's theorem via G\"unther's trick}, preprint (2026), arXiv:2606.13564.
 
 \bibitem{Qiu25}
 H.~Qiu, \emph{On equivariant isometric embeddings of Riemannian manifolds with symmetries},

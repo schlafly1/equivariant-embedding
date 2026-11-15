@@ -28,6 +28,89 @@ theorem EquivEmbed.gunther_fixed_point_equivariant
   have hv : v = v' := huniq v ⟨hvn, hvf⟩
   exact ⟨v, hvn, hvf, hvG, fun w hwn hwf => (huniq w ⟨hwn, hwf⟩).trans hv.symm⟩
 
+/-- **The Günther solution map is equivariant.**  Let `G` act on `E` by isometric linear
+maps and let `B` be `G`-equivariant; `m` need not be `G`-fixed.  If `v` is the solution of
+`v = m + B(v, v)` with `‖v‖ ≤ 2 ‖m‖`, then `g • v` is the solution for the data `g • m`: it
+solves `w = g • m + B(w, w)`, has `‖g • v‖ ≤ 2 ‖g • m‖`, and is the only such solution.  So the
+solution operator commutes with every symmetry of the equation. -/
+theorem EquivEmbed.gunther_solution_map_equivariant
+    {E G : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [Monoid G] [DistribMulAction G E] [IsIsometricSMul G E]
+    (B : E →L[ℝ] E →L[ℝ] E)
+    (hBG : ∀ (g : G) (v w : E), B (g • v) (g • w) = g • B v w)
+    (m v : E) (hm : 4 * ‖B‖ * ‖m‖ < 1) (hv : ‖v‖ ≤ 2 * ‖m‖) (hvf : v = m + B v v) (g : G) :
+    ‖g • v‖ ≤ 2 * ‖g • m‖ ∧ g • v = g • m + B (g • v) (g • v) ∧
+      ∀ w : E, ‖w‖ ≤ 2 * ‖g • m‖ → w = g • m + B w w → w = g • v :=
+  EquivEmbed.solution_bilinear_smul B hBG hm hv hvf g
+
+/-- **Lipschitz dependence of the Günther solution on the data.**  If `v`, `v'` are the
+small solutions for `m`, `m'`, then `(1 - 2 ‖B‖ (‖m‖ + ‖m'‖)) ‖v - v'‖ ≤ ‖m - m'‖`.  When
+`4 ‖B‖ ‖m‖ < 1` and `4 ‖B‖ ‖m'‖ < 1` the first factor is positive. -/
+theorem EquivEmbed.gunther_solution_map_lipschitz
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (B : E →L[ℝ] E →L[ℝ] E) (m m' v v' : E)
+    (hv : ‖v‖ ≤ 2 * ‖m‖) (hvf : v = m + B v v)
+    (hv' : ‖v'‖ ≤ 2 * ‖m'‖) (hvf' : v' = m' + B v' v') :
+    (1 - 2 * ‖B‖ * (‖m‖ + ‖m'‖)) * ‖v - v'‖ ≤ ‖m - m'‖ :=
+  EquivEmbed.solution_bilinear_lipschitz B hv hvf hv' hvf'
+
+open EquivEmbed.Torus in
+/-- **Equivariant Günther perturbation theorem on the flat torus `ℝⁿ / 2π ℤⁿ`
+(unconditional).**
+
+Maps of the torus into a complex Banach space `F` with a symmetric bilinear form `dot` are given
+by Fourier coefficients `a : Freq n → F` with `∑ (1 + |k|²) ‖a k‖ < ∞`; then `fsum a` is a map of
+class `C²`.  (For `F = ℂᴺ`, `dot z w = ∑ zₐ wₐ` and `cF` the coordinatewise conjugation, the
+real maps are the maps into `ℝᴺ` and `dot` is the Euclidean inner product.)
+
+Let `u` be such a map and let `(ℓ1, ℓ2)` be a *dual frame* of its first and second derivatives
+(hypotheses `hd1`–`hd4`); this says that `fsum u` is free.  Then there are `ε > 0` and `C` such
+that for every symmetric `h` with `∑ (1 + |k|²) ‖h i j k‖ < ε` there is `v` with:
+
+* `∑ (1 + |k|²) ‖v k‖ ≤ C δ` whenever all `∑ (1 + |k|²) ‖h i j k‖ ≤ δ`;
+* `⟨∂ᵢ(u + v), ∂ⱼ(u + v)⟩ = ⟨∂ᵢu, ∂ⱼu⟩ + h i j` at every point: the map `u + v` induces the
+  metric `F(u) + h`;
+* **inheritance of symmetry**: if `t` is a translation of the torus and `R` an isometry of `F`
+  preserving `dot` such that `u`, `ℓ1`, `ℓ2` are `(t, R)`-equivariant and `h` is `t`-invariant
+  (stated on Fourier coefficients), then `(u + v)(x + t) = R ((u + v)(x))`;
+* **reality**: if the data are real for a conjugation `cF`, so is `u + v`.
+
+No elliptic estimate or other analytic input is assumed. -/
+theorem EquivEmbed.flat_torus_equivariant_perturbation {n : ℕ} {F : Type*}
+    [NormedAddCommGroup F] [NormedSpace ℂ F] [CompleteSpace F]
+    (dot : F →L[ℂ] F →L[ℂ] ℂ) (hsymm : ∀ x y, dot x y = dot y x)
+    (u : Freq n → F) (hu : Summable fun k => W k * ‖u k‖)
+    (ℓ1 : Fin n → Freq n → F) (hℓ1 : ∀ j, Summable fun k => W k * ‖ℓ1 j k‖)
+    (ℓ2 : Fin n → Fin n → Freq n → F) (hℓ2 : ∀ i j, Summable fun k => W k * ‖ℓ2 i j k‖)
+    (hd1 : ∀ x p q, dot (pd p (fsum u) x) (fsum (ℓ1 q) x) = if p = q then 1 else 0)
+    (hd2 : ∀ x p q r, dot (pd p (fsum u) x) (fsum (ℓ2 q r) x) = 0)
+    (hd3 : ∀ x p q r, dot (pd p (pd q (fsum u)) x) (fsum (ℓ1 r) x) = 0)
+    (hd4 : ∀ x p q r s, dot (pd p (pd q (fsum u)) x) (fsum (ℓ2 r s) x)
+      = (if p = r then (if q = s then (1 / 2 : ℂ) else 0) else 0)
+        + (if p = s then (if q = r then (1 / 2 : ℂ) else 0) else 0)) :
+    ∃ ε > 0, ∃ C : ℝ, ∀ h : Fin n → Fin n → Freq n → ℂ,
+      (∀ i j, Summable fun k => W k * ‖h i j k‖) → (∀ i j, h i j = h j i) →
+      (∀ i j, ∑' k, W k * ‖h i j k‖ < ε) →
+      ∃ v : Freq n → F, (Summable fun k => W k * ‖v k‖) ∧
+        (∀ δ : ℝ, (∀ i j, ∑' k, W k * ‖h i j k‖ ≤ δ) → ∑' k, W k * ‖v k‖ ≤ C * δ) ∧
+        (∀ x i j, dot (pd i (fun y => fsum u y + fsum v y) x)
+            (pd j (fun y => fsum u y + fsum v y) x)
+          = dot (pd i (fsum u) x) (pd j (fsum u) x) + fsum (h i j) x) ∧
+        (∀ (t : Fin n → ℝ) (R : F →ₗᵢ[ℂ] F), (∀ x y, dot (R x) (R y) = dot x y) →
+          (∀ k, ef k (-t) • R (u k) = u k) →
+          (∀ j k, ef k (-t) • R (ℓ1 j k) = ℓ1 j k) →
+          (∀ i j k, ef k (-t) • R (ℓ2 i j k) = ℓ2 i j k) →
+          (∀ i j k, ef k (-t) * h i j k = h i j k) →
+          (∀ k, ef k (-t) • R (v k) = v k) ∧
+            ∀ x, fsum u (x + t) + fsum v (x + t) = R (fsum u x + fsum v x)) ∧
+        (∀ cF : F →ₗᵢ[ℝ] F, (∀ (z : ℂ) (y : F), cF (z • y) = starRingEnd ℂ z • cF y) →
+          (∀ x y, dot (cF x) (cF y) = starRingEnd ℂ (dot x y)) →
+          (∀ k, cF (u (-k)) = u k) →
+          (∀ j k, cF (ℓ1 j (-k)) = ℓ1 j k) → (∀ i j k, cF (ℓ2 i j (-k)) = ℓ2 i j k) →
+          (∀ i j k, starRingEnd ℂ (h i j (-k)) = h i j k) →
+          (∀ k, cF (v (-k)) = v k) ∧ ∀ x, cF (fsum u x + fsum v x) = fsum u x + fsum v x) :=
+  EquivEmbed.Torus.torus_perturbation dot hsymm u hu ℓ1 hℓ1 ℓ2 hℓ2 hd1 hd2 hd3 hd4
+
 /-- **The pointwise Nash–Günther right inverse.**  If `A : W → V` is injective (the map is
 *free* at a point: first and second derivatives are linearly independent), then for every `b`
 the system `A† x = b` has a unique solution in the range of `A`, and it is the solution of least

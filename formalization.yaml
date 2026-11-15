@@ -52,7 +52,7 @@ sources:
     type: "paper"
     location: "paper/equivariant-gunther.pdf in this repository"
     relationship: "formalizes"
-    note: "The accompanying paper; Section 9 describes this formalization."
+    note: "The accompanying paper; Section 12 describes this formalization."
     license: "unknown"
     author_endorsement: "participated"
 
@@ -60,9 +60,20 @@ related_formalizations: []
 
 status:
   scope: >-
-    Formalized unconditionally: the equivariant Günther fixed point theorem in a Banach space
+    Formalized unconditionally: the equivariant Günther perturbation theorem on the flat torus
+    ℝⁿ/2πℤⁿ (paper, Section 11), for maps given by Fourier coefficients in a weighted Wiener
+    algebra: for a map u with a dual frame of its first and second derivatives, every small
+    symmetric h is realized as ⟨∂ᵢ(u+v), ∂ⱼ(u+v)⟩ = ⟨∂ᵢu, ∂ⱼu⟩ + hᵢⱼ pointwise, with a linear
+    bound on v, inheritance of every translation-and-rotation symmetry of the data, and reality;
+    this includes the function spaces, Günther's operators and their bounds, Günther's identity,
+    termwise differentiation and the fixed point, and has no analytic hypothesis. It is a special
+    case formalized separately because Mathlib lacks the analysis on manifolds needed in general;
+    it does not include the construction of the dual frame from freeness, the embedding
+    property, or the approximation step. Also formalized unconditionally: the equivariant Günther
+    fixed point theorem in a Banach space
     with an isometric linear action (existence, uniqueness in the ball of radius 2‖m‖, and
-    G-invariance of the solution); the pointwise Nash–Günther right inverse A (A† A)⁻¹
+    G-invariance of the solution), together with the equivariance of the solution map for
+    data that are not G-fixed and its Lipschitz dependence on the data; the pointwise Nash–Günther right inverse A (A† A)⁻¹
     (unique solution in range A, least norm, equivariance under orthogonal maps, invariance
     under changes of coordinates); pointwise freeness of the Veronese map (X, X ⊙ X); and the
     Haar-averaged form ∫ φ(σ⁻¹x) φ(σ⁻¹y) dμ (symmetric, bilinear, invariant, positive
@@ -72,7 +83,8 @@ status:
     c > 0), and (4) Günther's
     non-equivariant analytic package (Banach space, bounded linear M with G-fixed values,
     bounded bilinear equivariant B, Günther's identity, regularity, openness of embeddings).
-    Not formalized: manifolds, Hölder spaces of sections, the Laplace–Beltrami operator,
+    Not formalized: the finite regularity theorem (paper, Section 9), the analytic right
+    inverse and the theorem on families (paper, Section 10), manifolds, Hölder spaces of sections, the Laplace–Beltrami operator,
     Schauder estimates, eigenfunction expansions, the Mostow–Palais theorem and openness of
     embeddings; the link between the abstract EmbeddingProblem and an actual compact
     Riemannian G-manifold is given in the paper only.
@@ -131,6 +143,21 @@ alignment:
   statements:
     - source: "Paper, Theorem 6.1 (equivariant Günther fixed point)"
       lean: "EquivEmbed.gunther_fixed_point_equivariant"
+      module: "Solution"
+      status: "proved"
+      note: "Unconditional."
+    - source: "Paper, Theorem 11.4 (equivariant perturbation theorem on the flat torus)"
+      lean: "EquivEmbed.flat_torus_equivariant_perturbation"
+      module: "Solution"
+      status: "proved"
+      note: "Unconditional; no analytic hypothesis. Maps are given by Fourier coefficients."
+    - source: "Paper, Proposition 10.1(c) (the solution map commutes with the group)"
+      lean: "EquivEmbed.gunther_solution_map_equivariant"
+      module: "Solution"
+      status: "proved"
+      note: "Unconditional."
+    - source: "Paper, Proposition 10.1(b) (Lipschitz dependence on the data)"
+      lean: "EquivEmbed.gunther_solution_map_lipschitz"
       module: "Solution"
       status: "proved"
       note: "Unconditional."
